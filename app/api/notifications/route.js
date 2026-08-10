@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/config/db';
 import { notificationsTable, usersTable } from '@/config/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, or } from 'drizzle-orm';
 
 // Add runtime config for edge compatibility (optional)
 export const dynamic = 'force-dynamic';
@@ -47,28 +47,50 @@ async function retryDbOperation(operation, maxRetries = 3, initialDelay = 1000) 
  */
 export async function GET(request) {
     try {
-        const { userId: clerkUserId } = await auth();
+        const clerkUser = await currentUser();
 
-        if (!clerkUserId) {
+        if (!clerkUser) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
+        const userEmail = clerkUser?.emailAddresses?.[0]?.emailAddress || '';
+
         // Get user from database with retry logic
-        const [user] = await retryDbOperation(async () => {
+        let [user] = await retryDbOperation(async () => {
             return await db
                 .select()
                 .from(usersTable)
-                .where(eq(usersTable.userId, clerkUserId));
+                .where(
+                    userEmail
+                        ? or(eq(usersTable.userId, clerkUser.id), eq(usersTable.email, userEmail))
+                        : eq(usersTable.userId, clerkUser.id)
+                );
         });
 
         if (!user) {
-            return NextResponse.json(
-                { error: 'User not found' },
-                { status: 404 }
-            );
+            const [newUser] = await retryDbOperation(async () => {
+                return await db.insert(usersTable).values({
+                    userId: clerkUser.id,
+                    name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || clerkUser.fullName || 'User',
+                    email: userEmail,
+                    role: 'student',
+                    isActive: true,
+                    image: clerkUser.imageUrl,
+                    credits: 10,
+                }).returning();
+            });
+            user = newUser;
+        } else if (user.userId !== clerkUser.id) {
+            const [updated] = await retryDbOperation(async () => {
+                return await db.update(usersTable)
+                    .set({ userId: clerkUser.id, updatedAt: new Date() })
+                    .where(eq(usersTable.id, user.id))
+                    .returning();
+            });
+            if (updated) user = updated;
         }
 
         // Get query parameters

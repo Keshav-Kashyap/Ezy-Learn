@@ -83,8 +83,10 @@ const CopySubjectDialog = ({ isOpen, onClose, subject, onSuccess }) => {
                         description: result.message
                     }
                 )
-                onSuccess?.()
                 onClose()
+                setTimeout(() => {
+                    onSuccess?.()
+                }, 50)
             } else {
                 toast.error(result.error || 'Failed to copy subject')
             }

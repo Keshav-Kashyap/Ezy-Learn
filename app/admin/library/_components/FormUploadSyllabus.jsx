@@ -188,12 +188,14 @@ const FormUploadSyllabus = ({ onClose, onSuccess, prefilledCategory, prefilledSe
                         setSelectedSemester('')
                     }
 
-                    if (onSuccess) {
-                        await onSuccess()
-                    }
                     if (onClose) {
                         onClose()
                     }
+                    setTimeout(() => {
+                        if (onSuccess) {
+                            onSuccess()
+                        }
+                    }, 50)
                 } else {
                     throw new Error(result.error || 'Failed to upload syllabus')
                 }
@@ -258,12 +260,14 @@ const FormUploadSyllabus = ({ onClose, onSuccess, prefilledCategory, prefilledSe
                         setSelectedSemester('')
                     }
 
-                    if (onSuccess) {
-                        await onSuccess()
-                    }
                     if (onClose) {
                         onClose()
                     }
+                    setTimeout(() => {
+                        if (onSuccess) {
+                            onSuccess()
+                        }
+                    }, 50)
                 } else {
                     throw new Error(result.error || 'Upload failed')
                 }

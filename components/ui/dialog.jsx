@@ -51,6 +51,12 @@ function DialogContent({
   showCloseButton = true,
   ...props
 }) {
+  React.useEffect(() => {
+    return () => {
+      document.body.style.pointerEvents = '';
+    };
+  }, []);
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />

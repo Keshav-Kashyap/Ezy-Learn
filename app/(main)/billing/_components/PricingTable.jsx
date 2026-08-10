@@ -10,7 +10,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { openBuyCreditModal } from "@/components/BuyCreditModal";
 
 const plans = [
     {
@@ -70,11 +70,7 @@ export default function PricingTable() {
     const emailAddress = "kashyapkeshav934@gmail.com";
 
     const handleBuyClick = (plan) => {
-        setSelectedPlan(plan);
-        setModalOpen(true);
-        toast.info("Service in progress! Contact via email for credits.", {
-            description: emailAddress
-        });
+        openBuyCreditModal(plan);
     };
 
     const handleCopyEmail = () => {

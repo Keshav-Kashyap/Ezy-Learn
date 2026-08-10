@@ -5,6 +5,7 @@ import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import { UserDetailContext } from '../context/UserDetailContext'
 import { NotificationProvider } from '../context/NotificationContext'
+import BuyCreditModal from '../components/BuyCreditModal'
 
 const Provider = ({ children }) => {
 
@@ -31,6 +32,7 @@ const Provider = ({ children }) => {
             <UserDetailContext.Provider value={{ userDetail, setUserDetail }}>
                 <NotificationProvider>
                     {children}
+                    <BuyCreditModal />
                 </NotificationProvider>
             </UserDetailContext.Provider>
         </div>

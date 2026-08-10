@@ -36,8 +36,10 @@ const DeleteConfirmDialog = ({
 
             if (result.success) {
                 toast.success('Deleted successfully!')
-                onConfirm?.()
                 onOpenChange(false)
+                setTimeout(() => {
+                    onConfirm?.()
+                }, 50)
             } else {
                 throw new Error(result.error || 'Failed to delete')
             }

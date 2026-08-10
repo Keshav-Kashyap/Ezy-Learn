@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 
 export async function PUT(req, { params }) {
     try {
-        const { id } = params;
+        const { id } = await params;
         const body = await req.json();
         const { name, semesterNumber, description } = body;
 
@@ -70,7 +70,7 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(req, { params }) {
     try {
-        const { id } = params;
+        const { id } = await params;
 
         // Check if semester exists
         const existing = await db.select()

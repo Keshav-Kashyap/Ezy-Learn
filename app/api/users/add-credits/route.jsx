@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/config/db";
 import { usersTable } from "@/config/schema";
 import { currentUser } from "@clerk/nextjs/server";
-import { eq, sql } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -28,18 +28,43 @@ export async function POST(req) {
             );
         }
 
-        // Fetch existing user
-        const existingUser = await db
+        const userEmail = user?.emailAddresses?.[0]?.emailAddress || '';
+
+        let dbUser;
+        const existingUsers = await db
             .select()
             .from(usersTable)
-            .where(eq(usersTable.userId, user.id))
+            .where(
+                userEmail
+                    ? or(eq(usersTable.userId, user.id), eq(usersTable.email, userEmail))
+                    : eq(usersTable.userId, user.id)
+            )
             .limit(1);
 
-        if (existingUser.length === 0) {
-            return NextResponse.json(
-                { success: false, error: "User record not found" },
-                { status: 404 }
-            );
+        if (existingUsers.length === 0) {
+            const [newUser] = await db
+                .insert(usersTable)
+                .values({
+                    userId: user.id,
+                    name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.fullName || 'User',
+                    email: userEmail,
+                    role: 'student',
+                    isActive: true,
+                    image: user.imageUrl,
+                    credits: 10,
+                })
+                .returning();
+            dbUser = newUser;
+        } else {
+            dbUser = existingUsers[0];
+            if (dbUser.userId !== user.id) {
+                const [updated] = await db
+                    .update(usersTable)
+                    .set({ userId: user.id, updatedAt: new Date() })
+                    .where(eq(usersTable.id, dbUser.id))
+                    .returning();
+                if (updated) dbUser = updated;
+            }
         }
 
         // Update credits
@@ -49,7 +74,7 @@ export async function POST(req) {
                 credits: sql`COALESCE(${usersTable.credits}, 0) + ${creditsToAdd}`,
                 updatedAt: new Date(),
             })
-            .where(eq(usersTable.userId, user.id))
+            .where(eq(usersTable.id, dbUser.id))
             .returning();
 
         return NextResponse.json({

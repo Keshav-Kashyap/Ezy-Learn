@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 // PUT - Update course
 export async function PUT(request, { params }) {
     try {
-        const { id } = params;
+        const { id } = await params;
         const body = await request.json();
         const { name, code, description, duration } = body;
 
@@ -76,7 +76,7 @@ export async function PUT(request, { params }) {
 // DELETE - Delete course
 export async function DELETE(request, { params }) {
     try {
-        const { id } = params;
+        const { id } = await params;
 
         // Check if course exists
         const existingCourse = await db

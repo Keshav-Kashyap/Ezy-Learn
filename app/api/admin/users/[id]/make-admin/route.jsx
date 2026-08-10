@@ -29,7 +29,7 @@ export async function PATCH(req, { params }) {
             }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
 
         // Check if target user exists
         const [targetUser] = await db.select()

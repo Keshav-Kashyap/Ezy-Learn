@@ -56,8 +56,10 @@ const EditSubjectDialog = ({ subject, open, onOpenChange, onSuccess }) => {
 
             if (result.success) {
                 toast.success('Subject updated successfully!')
-                onSuccess?.()
                 onOpenChange(false)
+                setTimeout(() => {
+                    onSuccess?.()
+                }, 50)
             } else {
                 throw new Error(result.error || 'Failed to update subject')
             }

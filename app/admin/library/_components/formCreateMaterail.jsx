@@ -234,13 +234,15 @@ const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode
                         setCourseCode('')
                     }
 
-                    // Refresh data and close
-                    if (onSuccess) {
-                        await onSuccess()
-                    }
+                    // Close modal first and refresh data
                     if (onClose) {
                         onClose()
                     }
+                    setTimeout(() => {
+                        if (onSuccess) {
+                            onSuccess()
+                        }
+                    }, 50)
                 } else {
                     throw new Error(result.error || 'Failed to add material')
                 }
@@ -326,13 +328,15 @@ const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode
                         setCourseCode('')
                     }
 
-                    // Refresh data and close
-                    if (onSuccess) {
-                        await onSuccess()
-                    }
+                    // Close modal first and refresh data
                     if (onClose) {
                         onClose()
                     }
+                    setTimeout(() => {
+                        if (onSuccess) {
+                            onSuccess()
+                        }
+                    }, 50)
                 } else {
                     throw new Error(result.error || 'Upload failed')
                 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/config/db";
 import { usersTable } from "@/config/schema";
 import { currentUser } from "@clerk/nextjs/server";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, or, sql } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -29,21 +29,47 @@ export async function POST(req) {
             // body missing or empty, default to 1
         }
 
-        // Fetch existing user to check role and credits
-        const existingUser = await db
+        const userEmail = user?.emailAddresses?.[0]?.emailAddress || '';
+
+        // Fetch existing user to check role and credits (matching by userId OR email)
+        let dbUser;
+        const existingUsers = await db
             .select()
             .from(usersTable)
-            .where(eq(usersTable.userId, user.id))
+            .where(
+                userEmail
+                    ? or(eq(usersTable.userId, user.id), eq(usersTable.email, userEmail))
+                    : eq(usersTable.userId, user.id)
+            )
             .limit(1);
 
-        if (existingUser.length === 0) {
-            return NextResponse.json(
-                { success: false, error: "User not found" },
-                { status: 404 }
-            );
+        if (existingUsers.length === 0) {
+            // Auto-create user if not yet in database
+            const [newUser] = await db
+                .insert(usersTable)
+                .values({
+                    userId: user.id,
+                    name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.fullName || 'User',
+                    email: userEmail,
+                    role: 'student',
+                    isActive: true,
+                    image: user.imageUrl,
+                    credits: 10,
+                })
+                .returning();
+            dbUser = newUser;
+        } else {
+            dbUser = existingUsers[0];
+            // Link userId if user was found by email but userId column was unlinked/missing
+            if (dbUser.userId !== user.id) {
+                const [updated] = await db
+                    .update(usersTable)
+                    .set({ userId: user.id, updatedAt: new Date() })
+                    .where(eq(usersTable.id, dbUser.id))
+                    .returning();
+                if (updated) dbUser = updated;
+            }
         }
-
-        const dbUser = existingUser[0];
 
         // Admin bypass: Admins don't lose credits
         if (dbUser.role === 'admin') {
@@ -75,7 +101,7 @@ export async function POST(req) {
             })
             .where(
                 and(
-                    eq(usersTable.userId, user.id),
+                    eq(usersTable.id, dbUser.id),
                     gt(usersTable.credits, amount - 1)
                 )
             )

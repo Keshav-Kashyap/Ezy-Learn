@@ -29,6 +29,12 @@ function DropdownMenuContent({
   sideOffset = 4,
   ...props
 }) {
+  React.useEffect(() => {
+    return () => {
+      document.body.style.pointerEvents = '';
+    };
+  }, []);
+
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
