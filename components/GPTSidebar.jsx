@@ -291,7 +291,7 @@ const GPTSidebar = ({ open, onClose, messages: externalMessages, onWidthChange }
     const [loading, setLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [copiedCodeId, setCopiedCodeId] = useState(null);
-    const [width, setWidth] = useState(680);
+    const [width, setWidth] = useState(460);
     const [isResizing, setIsResizing] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -306,14 +306,17 @@ const GPTSidebar = ({ open, onClose, messages: externalMessages, onWidthChange }
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Set a larger default width on desktop to make chat feel like a primary panel.
+    // Set a compact default width on desktop to leave plenty of room for PDF viewing.
     useEffect(() => {
         const setInitialWidth = () => {
             if (window.innerWidth < 640) return;
-            const preferredWidth = Math.min(780, Math.round(window.innerWidth * 0.55));
-            const clampedWidth = Math.max(520, preferredWidth);
+            const clampedWidth = 450;
             setWidth(clampedWidth);
+            if (typeof window !== 'undefined') {
+                window.__AI_SIDEBAR_WIDTH__ = clampedWidth;
+            }
             onWidthChange?.(clampedWidth);
+            window.dispatchEvent(new CustomEvent('ai-sidebar-width-change', { detail: { width: clampedWidth } }));
         };
 
         setInitialWidth();
@@ -360,6 +363,7 @@ const GPTSidebar = ({ open, onClose, messages: externalMessages, onWidthChange }
                 if (newWidth >= 420 && newWidth <= 1000) {
                     setWidth(newWidth);
                     onWidthChange?.(newWidth);
+                    window.dispatchEvent(new CustomEvent('ai-sidebar-width-change', { detail: { width: newWidth } }));
                 }
             });
         };
@@ -599,7 +603,10 @@ const GPTSidebar = ({ open, onClose, messages: externalMessages, onWidthChange }
                             <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={onClose}
+                                onClick={() => {
+                                    window.dispatchEvent(new CustomEvent('close-ai-sidebar'));
+                                    onClose?.();
+                                }}
                                 className="text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                             >
                                 <X className="w-4 h-4" />

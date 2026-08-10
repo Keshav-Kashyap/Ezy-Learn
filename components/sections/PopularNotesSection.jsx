@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { motion } from "motion/react";
 import Link from "next/link";
 import GenericCard from '@/app/(main)/_components/shared/GenericCard';
-import ReviewPromptModal from '@/components/ReviewPromptModal';
-import { Download, FileText, Calendar, Heart, Share2, ArrowRight, BookOpen } from 'lucide-react';
+import { Download, FileText, Calendar, Heart, Share2, ArrowRight, BookOpen, Lock } from 'lucide-react';
 import CourseSkeleton from '@/app/_components/landing/skeletons/CourseSkeleton';
+import { UserDetailContext } from '@/context/UserDetailContext';
+import { consumeCreditAndDownload } from '@/lib/downloadHelper';
 
 const PopularNotesSection = ({ notes, loading, isSignedIn }) => {
-    const [showReviewModal, setShowReviewModal] = useState(false);
+    const { userDetail, setUserDetail } = useContext(UserDetailContext) || {};
+    const isAdmin = userDetail?.role === 'admin';
+    const isOutOfCredits = isSignedIn && !isAdmin && (userDetail?.credits ?? 0) <= 0;
 
     const handleDownload = async (note) => {
         if (!isSignedIn) {
@@ -17,32 +20,15 @@ const PopularNotesSection = ({ notes, loading, isSignedIn }) => {
             return;
         }
 
-        // Download directly first - NO BLOCKING
-        if (note.fileUrl) {
-            window.open(note.fileUrl, '_blank');
-        }
+        if (!note?.fileUrl) return;
 
-        // Track download count in localStorage
-        const DOWNLOAD_COUNT_KEY = 'ezy_download_count';
-        const currentCount = parseInt(localStorage.getItem(DOWNLOAD_COUNT_KEY) || '0', 10);
-        const newCount = currentCount + 1;
-        localStorage.setItem(DOWNLOAD_COUNT_KEY, newCount.toString());
-
-        console.log(`📥 Download #${newCount}`);
-
-        // Show review modal every 3 downloads
-        if (newCount % 3 === 0) {
-            setTimeout(() => {
-                console.log('🔔 Showing review modal (3 downloads reached)');
-                setShowReviewModal(true);
-            }, 800); // Small delay after download starts
-        }
-    };
-
-    const handleReviewSubmitted = async () => {
-        // Close modal
-        setShowReviewModal(false);
-        // Count continues - user will see modal again after next 3 downloads
+        consumeCreditAndDownload({
+            fileUrl: note.fileUrl,
+            fileName: note.title,
+            fileType: note.type,
+            userDetail,
+            setUserDetail,
+        });
     };
 
     const handleShare = (note) => {
@@ -117,10 +103,10 @@ const PopularNotesSection = ({ notes, loading, isSignedIn }) => {
                                         ]}
                                         actions={[
                                             {
-                                                label: isSignedIn ? 'Download' : 'Login to Download',
+                                                label: !isSignedIn ? 'Login to Download' : 'Download',
                                                 onClick: () => handleDownload(note),
                                                 fullWidth: true,
-                                                icon: <Download className="w-4 h-4" />
+                                                icon: isOutOfCredits ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />
                                             },
                                             {
                                                 label: '',
@@ -159,15 +145,6 @@ const PopularNotesSection = ({ notes, loading, isSignedIn }) => {
                         </button>
                     </Link>
                 </motion.div>
-
-                {/* Review Prompt Modal */}
-                <ReviewPromptModal
-                    isOpen={showReviewModal}
-                    onClose={() => {
-                        setShowReviewModal(false);
-                    }}
-                    onReviewSubmitted={handleReviewSubmitted}
-                />
             </div>
         </section>
     );

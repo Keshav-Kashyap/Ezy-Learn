@@ -12,7 +12,23 @@ import { menuItems, bottomMenuItems } from '../../services/constant'
 const DashboardProvider = ({ children }) => {
     const [aiSidebarOpen, setAISidebarOpen] = useState(false);
     const [aiMessages, setAIMessages] = useState([]);
-    const [sidebarWidth, setSidebarWidth] = useState(680);
+    const [sidebarWidth, setSidebarWidth] = useState(450);
+
+    React.useEffect(() => {
+        const handleOpenAI = () => setAISidebarOpen(true);
+        const handleCloseAI = () => setAISidebarOpen(false);
+        const handleToggleAI = () => setAISidebarOpen(prev => !prev);
+
+        window.addEventListener('open-ai-sidebar', handleOpenAI);
+        window.addEventListener('close-ai-sidebar', handleCloseAI);
+        window.addEventListener('toggle-ai-sidebar', handleToggleAI);
+
+        return () => {
+            window.removeEventListener('open-ai-sidebar', handleOpenAI);
+            window.removeEventListener('close-ai-sidebar', handleCloseAI);
+            window.removeEventListener('toggle-ai-sidebar', handleToggleAI);
+        };
+    }, []);
 
     return (
         <SidebarProvider defaultOpen={false}>

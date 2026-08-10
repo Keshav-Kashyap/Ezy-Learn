@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Search, Download, Eye, Lock, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { UserDetailContext } from "@/context/UserDetailContext";
+import { consumeCreditAndDownload } from "@/lib/downloadHelper";
 
 export default function SearchSection({ isSignedIn }) {
+    const { userDetail, setUserDetail } = useContext(UserDetailContext) || {};
+    const isAdmin = userDetail?.role === 'admin';
+    const isOutOfCredits = isSignedIn && !isAdmin && (userDetail?.credits ?? 0) <= 0;
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -175,11 +180,26 @@ export default function SearchSection({ isSignedIn }) {
                                                     </Button>
                                                     <Button
                                                         size="sm"
-                                                        onClick={() => window.open(material.fileUrl, '_blank')}
-                                                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                                        onClick={() => consumeCreditAndDownload({
+                                                            fileUrl: material.fileUrl,
+                                                            fileName: material.title,
+                                                            fileType: material.type,
+                                                            userDetail,
+                                                            setUserDetail,
+                                                        })}
+                                                        className={`flex-1 ${isOutOfCredits ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                                                     >
-                                                        <Download className="h-4 w-4 mr-1" />
-                                                        Download
+                                                        {isOutOfCredits ? (
+                                                            <>
+                                                                <Lock className="h-4 w-4 mr-1" />
+                                                                Needs credits
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Download className="h-4 w-4 mr-1" />
+                                                                Download
+                                                            </>
+                                                        )}
                                                     </Button>
                                                 </>
                                             ) : (

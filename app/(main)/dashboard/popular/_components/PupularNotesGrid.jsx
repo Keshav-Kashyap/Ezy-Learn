@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import GenericCard from '../../../_components/shared/GenericCard';
 import { toast } from 'sonner';
 import { usePopularNotes } from '@/hooks/useCourses';
 import CourseSkeleton from '@/app/_components/landing/skeletons/CourseSkeleton';
+import { UserDetailContext } from '@/context/UserDetailContext';
+import { consumeCreditAndDownload } from '@/lib/downloadHelper';
 
 import {
     Download,
@@ -12,11 +14,16 @@ import {
     TrendingUp,
     FileText,
     Calendar,
-    Heart
+    Heart,
+    Lock
 } from "lucide-react";
 import HeroHeader from '../../_components/HeroHeader';
 
 const PopularNotesGrid = ({ limit = 10 }) => {
+    const { userDetail, setUserDetail } = useContext(UserDetailContext) || {};
+    const isAdmin = userDetail?.role === 'admin';
+    const isOutOfCredits = !isAdmin && (userDetail?.credits ?? 0) <= 0;
+
     // Use React Query hook for caching
     const { data, isLoading, isError } = usePopularNotes(limit);
     const popularNotes = data?.notes || [];
@@ -36,13 +43,13 @@ const PopularNotesGrid = ({ limit = 10 }) => {
     }, []);
 
     const handleDownload = (note) => {
-        const link = document.createElement('a');
-        link.href = note.fileUrl;
-        link.target = '_blank';
-        link.download = `${note.title}.${note.type.toLowerCase()}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        consumeCreditAndDownload({
+            fileUrl: note.fileUrl,
+            fileName: note.title,
+            fileType: note.type,
+            userDetail,
+            setUserDetail,
+        });
     };
 
     const handleShare = (note) => {
@@ -157,7 +164,7 @@ const PopularNotesGrid = ({ limit = 10 }) => {
                                             label: 'Download',
                                             onClick: () => handleDownload(note),
                                             fullWidth: true,
-                                            icon: <Download className="w-4 h-4" />
+                                            icon: isOutOfCredits ? <Lock className="w-4 h-4" /> : <Download className="w-4 h-4" />
                                         },
                                         {
                                             label: '',

@@ -1,30 +1,28 @@
 "use client"
 
 import React, { useContext, useState, useEffect } from 'react';
-import { FileDown, Loader2 } from 'lucide-react';
+import { FileDown, Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import ReviewPromptModal from '@/components/ReviewPromptModal';
 import { UserDetailContext } from '@/context/UserDetailContext';
+import { downloadFileDirectly } from '@/lib/downloadHelper';
 
 const DownloadSyllabusButton = ({ category, semesterName, variant = "outline", size = "sm", className = "" }) => {
     const [downloading, setDownloading] = useState(false);
     const [hasSyllabus, setHasSyllabus] = useState(false);
     const [checking, setChecking] = useState(true);
-    const [showReviewModal, setShowReviewModal] = useState(false);
-    const [hasReviewed, setHasReviewed] = useState(false);
-    const [pendingDownload, setPendingDownload] = useState(false);
-    const { setUserDetail } = useContext(UserDetailContext) || {};
+    const { userDetail, setUserDetail } = useContext(UserDetailContext) || {};
+    const isOutOfCredits = userDetail?.role !== 'admin' && (userDetail?.credits ?? 0) <= 0;
 
     // Check if syllabus exists on mount
     useEffect(() => {
         checkSyllabusAvailability();
-     
+
     }, [category, semesterName]);
 
-    
+
 
     const checkSyllabusAvailability = async () => {
         if (!category || !semesterName) {
@@ -51,29 +49,7 @@ const DownloadSyllabusButton = ({ category, semesterName, variant = "outline", s
 
     const handleDownloadClick = (e) => {
         e.stopPropagation();
-
-        if (!hasReviewed) {
-            setPendingDownload(true);
-            setShowReviewModal(true);
-        } else {
-            handleDownload(e);
-        }
-    };
-
-    const handleReviewSubmitted = async () => {
-        // Update local state immediately
-        setHasReviewed(true);
-        setShowReviewModal(false);
-
-        // Execute the pending download
-        if (pendingDownload) {
-            setPendingDownload(false);
-            // Small delay to ensure modal is fully closed
-            setTimeout(() => {
-                const syntheticEvent = { stopPropagation: () => { } };
-                handleDownload(syntheticEvent);
-            }, 100);
-        }
+        handleDownload(e);
     };
 
     const handleDownload = async (e) => {
@@ -108,25 +84,16 @@ const DownloadSyllabusButton = ({ category, semesterName, variant = "outline", s
                 return;
             }
 
-            const creditResponse = await fetch('/api/users/consume-credit', {
-                method: 'POST'
-            });
-            const creditResult = await creditResponse.json();
-
-            if (!creditResponse.ok || !creditResult.success) {
-                toast.error(creditResult.error || 'Unable to deduct credit for this download', { id: toastId });
-                return;
-            }
-
-            if (setUserDetail && creditResult.user) {
-                setUserDetail(creditResult.user);
-            }
-
             toast.success(`Found ${data.syllabi.length} syllabus files`, { id: toastId });
 
-            // If only one syllabus, open directly
+            // If only one syllabus, hand off directly to Chrome native download without redirect or opening new tab
             if (data.syllabi.length === 1) {
-                window.open(data.syllabi[0].fileUrl, '_blank');
+                const singleSyllabus = data.syllabi[0];
+                downloadFileDirectly(
+                    singleSyllabus.fileUrl,
+                    `${semesterName.replace(/\s+/g, '_')}_Syllabus.pdf`
+                );
+                toast.dismiss(toastId);
                 return;
             }
 
@@ -200,16 +167,6 @@ const DownloadSyllabusButton = ({ category, semesterName, variant = "outline", s
                     </>
                 )}
             </Button>
-
-            {/* Review Prompt Modal */}
-            <ReviewPromptModal
-                isOpen={showReviewModal}
-                onClose={() => {
-                    setShowReviewModal(false);
-                    setPendingDownload(false);
-                }}
-                onReviewSubmitted={handleReviewSubmitted}
-            />
         </>
     );
 };

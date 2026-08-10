@@ -8,20 +8,16 @@ import { UserDetailContext } from '@/context/UserDetailContext';
 import { useSemesterDetail, useInvalidateSemesterDetail } from '@/hooks/useCourses';
 import DownloadAllMaterialsButton from '@/components/DownloadAllMaterialsButton';
 import DownloadSyllabusButton from '@/components/DownloadSyllabusButton';
-import ReviewPromptModal from '@/components/ReviewPromptModal';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import FormUploadSyllabus from '@/app/admin/library/_components/FormUploadSyllabus';
 import { Button } from '@/components/ui/button';
-
+import { consumeCreditAndDownload } from '@/lib/downloadHelper';
 
 const SemesterDetail = ({ basePath }) => {
-    const { userDetail } = useContext(UserDetailContext);
+    const { userDetail, setUserDetail } = useContext(UserDetailContext);
     const isAdmin = userDetail?.role === "admin";
     const [syllabusDialogOpen, setSyllabusDialogOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    const [showReviewModal, setShowReviewModal] = useState(false);
-    const [pendingDownload, setPendingDownload] = useState(null);
-    const [hasReviewed, setHasReviewed] = useState(false);
 
     const { code, semesterId } = useParams();
 
@@ -49,39 +45,16 @@ const SemesterDetail = ({ basePath }) => {
     };
 
 
-    const handleDownload = (material) => {
-        // Admin can download without review
-        if (isAdmin) {
-            if (material.fileUrl) {
-                window.open(material.fileUrl, '_blank');
-            }
-            return;
-        }
+    const handleDownload = async (material) => {
+        if (!material?.fileUrl) return;
 
-        // Check if user has reviewed
-        if (!hasReviewed) {
-            setPendingDownload(material);
-            setShowReviewModal(true);
-        } else {
-            if (material.fileUrl) {
-                window.open(material.fileUrl, '_blank');
-            }
-        }
-    };
-
-    const handleReviewSubmitted = async () => {
-        // Update local state immediately
-        setHasReviewed(true);
-        setShowReviewModal(false);
-
-        // Execute the pending download
-        if (pendingDownload && pendingDownload.fileUrl) {
-            // Small delay to ensure modal is fully closed
-            setTimeout(() => {
-                window.open(pendingDownload.fileUrl, '_blank');
-                setPendingDownload(null);
-            }, 100);
-        }
+        consumeCreditAndDownload({
+            fileUrl: material.fileUrl,
+            fileName: material.title,
+            fileType: material.type,
+            userDetail,
+            setUserDetail,
+        });
     };
 
     if (isLoading) {
@@ -199,16 +172,6 @@ const SemesterDetail = ({ basePath }) => {
                             />
                         ))}
                     </div>
-
-                    {/* Review Prompt Modal */}
-                    <ReviewPromptModal
-                        isOpen={showReviewModal}
-                        onClose={() => {
-                            setShowReviewModal(false);
-                            setPendingDownload(null);
-                        }}
-                        onReviewSubmitted={handleReviewSubmitted}
-                    />
                 </div>
             </div>
         </div>

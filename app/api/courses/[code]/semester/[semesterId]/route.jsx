@@ -68,7 +68,6 @@ export async function GET(request, { params }) {
                     materials: materials.map(material => ({
                         ...material,
                         downloadUrl: material.fileUrl,
-                        size: '2.5 MB', // Default size, could be calculated
                         lastUpdated: material.createdAt
                     }))
                 };

@@ -13,11 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { UserDetailContext } from "@/context/UserDetailContext";
+import { consumeCreditAndDownload } from "@/lib/downloadHelper";
 
 export default function Navbar() {
     const { user } = useUser();
     const { theme, setTheme } = useTheme();
-    const { userDetail } = useContext(UserDetailContext) || {};
+    const { userDetail, setUserDetail } = useContext(UserDetailContext) || {};
+    const isAdmin = userDetail?.role === 'admin';
+    const isOutOfCredits = user && !isAdmin && (userDetail?.credits ?? 0) <= 0;
     const router = useRouter();
     const [isVisible, setIsVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
@@ -106,6 +109,21 @@ export default function Navbar() {
             router.push('/sign-in');
         } else {
             window.open(material.fileUrl, '_blank');
+        }
+    };
+
+    const handleDownloadMaterial = (material) => {
+        if (!user) {
+            toast.error("Please login to access materials");
+            router.push('/sign-in');
+        } else {
+            consumeCreditAndDownload({
+                fileUrl: material.fileUrl,
+                fileName: material.title,
+                fileType: material.type,
+                userDetail,
+                setUserDetail,
+            });
         }
     };
 
@@ -308,11 +326,20 @@ export default function Navbar() {
                                                             </Button>
                                                             <Button
                                                                 size="sm"
-                                                                onClick={() => handleAction(material)}
-                                                                className="bg-blue-600 hover:bg-blue-700"
+                                                                onClick={() => handleDownloadMaterial(material)}
+                                                                className={isOutOfCredits ? "bg-amber-600 hover:bg-amber-700" : "bg-blue-600 hover:bg-blue-700"}
                                                             >
-                                                                <Download className="h-4 w-4 mr-1" />
-                                                                Download
+                                                                {isOutOfCredits ? (
+                                                                    <>
+                                                                        <Lock className="h-4 w-4 mr-1" />
+                                                                        Needs credits
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Download className="h-4 w-4 mr-1" />
+                                                                        Download
+                                                                    </>
+                                                                )}
                                                             </Button>
                                                         </>
                                                     ) : (

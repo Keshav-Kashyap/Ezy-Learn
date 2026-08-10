@@ -1,12 +1,13 @@
 
 "use client"
-import React, { useState, useEffect } from 'react';
-import { Download, ArrowLeft, Loader2, Upload, Trash2, MoreVertical, Edit, Eye, Star, X, Pin, PinOff } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { Download, ArrowLeft, Loader2, Upload, Trash2, MoreVertical, Edit, Eye, Star, X, Pin, PinOff, Lock, BookOpen } from 'lucide-react';
 import { useParams } from "next/navigation";
 import Link from 'next/link';
 import SubjectActions from '@/app/admin/library/_components/SubjectActions';
 import FormCreateMaterial from '@/app/admin/library/_components/formCreateMaterail';
-import ReviewPromptModal from '@/components/ReviewPromptModal';
+import { UserDetailContext } from '@/context/UserDetailContext';
+import CustomPdfViewer from '@/components/CustomPdfViewer';
 import {
     Dialog,
     DialogTrigger,
@@ -25,9 +26,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { getViewerUrl, getFileType } from '@/lib/utils';
+import { getFileType } from '@/lib/utils';
 
 const SubjectCard = ({ subject, onDownload, isAdmin, onUpdate }) => {
+    const { userDetail } = useContext(UserDetailContext) || {};
+    const isOutOfCredits = !isAdmin && (userDetail?.credits ?? 0) <= 0;
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [materialToDelete, setMaterialToDelete] = useState(null);
@@ -37,9 +40,6 @@ const SubjectCard = ({ subject, onDownload, isAdmin, onUpdate }) => {
     const [deletingMaterialId, setDeletingMaterialId] = useState(null);
     const [localMaterials, setLocalMaterials] = useState(subject.materials || []);
     const [viewingPdf, setViewingPdf] = useState(null);
-    const [showReviewModal, setShowReviewModal] = useState(false);
-    const [pendingDownload, setPendingDownload] = useState(null);
-    const [hasReviewed, setHasReviewed] = useState(false);
 
     // Helper function to check if material is popular based on tags
     const isPopularMaterial = (material) => {
@@ -56,27 +56,31 @@ const SubjectCard = ({ subject, onDownload, isAdmin, onUpdate }) => {
         setLocalMaterials(subject.materials || []);
     }, [subject.materials]);
 
+    const [fileSizes, setFileSizes] = useState({});
+
+    // Dynamically fetch real file sizes for materials from URL
+    useEffect(() => {
+        if (!subject.materials) return;
+        subject.materials.forEach((m) => {
+            if (m.fileUrl && !m.size) {
+                fetch(`/api/download/file-info?url=${encodeURIComponent(m.fileUrl)}`)
+                    .then((r) => r.json())
+                    .then((data) => {
+                        if (data?.formattedSize) {
+                            setFileSizes((prev) => ({ ...prev, [m.id]: data.formattedSize }));
+                        }
+                    })
+                    .catch(() => {});
+            }
+        });
+    }, [subject.materials]);
+
 
 
     const handleDownloadClick = (material) => {
         
     onDownload(material);
       
-    };
-
-    const handleReviewSubmitted = async () => {
-        // Update local state immediately
-        setHasReviewed(true);
-        setShowReviewModal(false);
-
-        // Execute the pending download
-        if (pendingDownload) {
-            // Small delay to ensure modal is fully closed
-            setTimeout(() => {
-                onDownload(pendingDownload);
-                setPendingDownload(null);
-            }, 100);
-        }
     };
 
     const handleDeleteMaterial = async (material) => {
@@ -286,7 +290,7 @@ const SubjectCard = ({ subject, onDownload, isAdmin, onUpdate }) => {
                                         )}
                                     </div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                        {material.type || 'PDF'} • {material.size || '2.5 MB'}
+                                        {(material.type || 'PDF').toUpperCase()} {(fileSizes[material.id] || (material.size && material.size !== '2.5 MB' ? material.size : '')) ? `• ${fileSizes[material.id] || material.size}` : ''}
                                     </p>
                                 </div>
 
@@ -295,17 +299,22 @@ const SubjectCard = ({ subject, onDownload, isAdmin, onUpdate }) => {
                                     <button
                                         onClick={() => setViewingPdf(material)}
                                         disabled={deletingMaterialId === material.id}
-                                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg font-medium transition-all shadow-sm text-sm disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                                     >
-                                        <Eye className="h-4 w-4" />
-                                        <span>View</span>
+                                        <BookOpen className="h-4 w-4" />
+                                        <span>Learn</span>
                                     </button>
                                     <button
                                         onClick={() => handleDownloadClick(material)}
                                         disabled={deletingMaterialId === material.id}
-                                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                                        className={`flex items-center justify-center gap-1.5 px-3 py-2 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex-1 ${
+                                            isOutOfCredits
+                                                ? 'bg-amber-600 hover:bg-amber-700'
+                                                : 'bg-blue-600 hover:bg-blue-700'
+                                        }`}
+                                        title={isOutOfCredits ? 'Needs credits to download' : 'Download material'}
                                     >
-                                        <Download className="h-4 w-4" />
+                                        {isOutOfCredits ? <Lock className="h-4 w-4" /> : <Download className="h-4 w-4" />}
                                         <span>Download</span>
                                     </button>
                                     {isAdmin && (
@@ -414,7 +423,7 @@ const SubjectCard = ({ subject, onDownload, isAdmin, onUpdate }) => {
                                 {materialToDelete.title}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                {materialToDelete.type || 'PDF'} • {materialToDelete.size || '2.5 MB'}
+                                {(materialToDelete.type || 'PDF').toUpperCase()} {materialToDelete.size && materialToDelete.size !== '2.5 MB' ? `• ${materialToDelete.size}` : ''}
                             </p>
                         </div>
                     )}
@@ -447,62 +456,13 @@ const SubjectCard = ({ subject, onDownload, isAdmin, onUpdate }) => {
                 </DialogContent>
             </Dialog>
 
-            {/* PDF Viewer Dialog */}
-            <Dialog open={!!viewingPdf} onOpenChange={() => setViewingPdf(null)}>
-                <DialogContent
-                    className="max-w-[95vw] w-full h-[90vh] p-0 bg-gray-900 border-gray-700"
-                    style={{
-                        '--dialog-close-bg': 'white',
-                        '--dialog-close-color': 'black'
-                    }}
-                >
-                    <style jsx>{`
-                        :global(.bg-gray-900 button[data-slot="dialog-close"]) {
-                            background-color: white !important;
-                            color: black !important;
-                            border-radius: 0.5rem !important;
-                            padding: 0.5rem !important;
-                            opacity: 1 !important;
-                        }
-                        :global(.bg-gray-900 button[data-slot="dialog-close"]:hover) {
-                            background-color: #e5e7eb !important;
-                        }
-                        :global(.bg-gray-900 button[data-slot="dialog-close"] svg) {
-                            width: 1.25rem !important;
-                            height: 1.25rem !important;
-                        }
-                    `}</style>
-                    <DialogHeader className="p-3 md:p-4 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
-                        <DialogTitle className="text-white flex items-center gap-2 md:gap-3 text-base md:text-lg font-bold">
-                            <span className="truncate">{viewingPdf?.title}</span>
-                            {viewingPdf && (
-                                <Badge className="text-xs flex-shrink-0 bg-blue-600 text-white border-0">
-                                    {getFileType(viewingPdf.fileUrl || viewingPdf.type).toUpperCase()}
-                                </Badge>
-                            )}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="w-full h-[calc(90vh-70px)] overflow-hidden">
-                        {viewingPdf && (
-                            <iframe
-                                src={getViewerUrl(viewingPdf.fileUrl, viewingPdf.type)}
-                                className="w-full h-full border-0"
-                                title={viewingPdf.title}
-                            />
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Review Prompt Modal */}
-            <ReviewPromptModal
-                isOpen={showReviewModal}
-                onClose={() => {
-                    setShowReviewModal(false);
-                    setPendingDownload(null);
-                }}
-                onReviewSubmitted={handleReviewSubmitted}
-            />
+            {/* Custom PDF Viewer Modal */}
+            {viewingPdf && (
+                <CustomPdfViewer
+                    material={viewingPdf}
+                    onClose={() => setViewingPdf(null)}
+                />
+            )}
         </div>
     );
 };

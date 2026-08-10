@@ -2,59 +2,29 @@
 
 import React, { useContext, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Download, Loader2, FolderArchive } from 'lucide-react'
+import { Download, Loader2, FolderArchive, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import ReviewPromptModal from '@/components/ReviewPromptModal'
 import { UserDetailContext } from '@/context/UserDetailContext'
 
 const DownloadAllMaterialsButton = ({ category, semesterName, variant = "outline", size = "sm", className = "" }) => {
     const [downloading, setDownloading] = useState(false)
     const [progress, setProgress] = useState(0)
-    const [showReviewModal, setShowReviewModal] = useState(false)
-    const [hasReviewed, setHasReviewed] = useState(false)
-    const [pendingDownload, setPendingDownload] = useState(false)
-    const { setUserDetail } = useContext(UserDetailContext) || {}
-
-    // useEffect(() => {
-    //     checkReviewStatus();
-    // }, []);
-
-    // const checkReviewStatus = async () => {
-    //     try {
-    //         const response = await fetch('/api/check-review-status');
-    //         const data = await response.json();
-    //         if (data.success) {
-    //             setHasReviewed(data.hasReviewed);
-    //         }
-    //     } catch (error) {
-    //         console.error('Error checking review status:', error);
-    //     }
-    // };
+    const { userDetail, setUserDetail } = useContext(UserDetailContext) || {}
+    const userCredits = userDetail?.credits ?? 0;
+    const isAdmin = userDetail?.role === 'admin';
+    const isNotEnoughCredits = !isAdmin && userCredits < 50;
 
     const handleDownloadClick = () => {
-        if (!hasReviewed) {
-            setPendingDownload(true);
-            setShowReviewModal(true);
-        } else {
-            downloadAllMaterials();
+        if (isNotEnoughCredits) {
+            toast.error("Download All requires 50+ credits!", {
+                description: `You currently have ${userCredits} credits. Downloading all materials consumes 10 credits.`,
+            });
+            return;
         }
-    };
 
-    const handleReviewSubmitted = async () => {
-        // Update local state immediately
-        setHasReviewed(true);
-        setShowReviewModal(false);
-
-        // Execute the pending download
-        if (pendingDownload) {
-            setPendingDownload(false);
-            // Small delay to ensure modal is fully closed
-            setTimeout(() => {
-                downloadAllMaterials();
-            }, 100);
-        }
+        downloadAllMaterials();
     };
 
     const downloadAllMaterials = async () => {
@@ -83,13 +53,17 @@ const DownloadAllMaterialsButton = ({ category, semesterName, variant = "outline
                 return
             }
 
+            // Deduct 10 credits for bulk download
             const creditResponse = await fetch('/api/users/consume-credit', {
-                method: 'POST'
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: 10 })
             })
             const creditResult = await creditResponse.json()
 
             if (!creditResponse.ok || !creditResult.success) {
-                toast.error(creditResult.error || 'Unable to deduct credit for this download')
+                toast.error(creditResult.error || 'Requires 50+ credits to Download All')
+                setDownloading(false)
                 return
             }
 
@@ -223,6 +197,11 @@ const DownloadAllMaterialsButton = ({ category, semesterName, variant = "outline
                         <Loader2 className="h-4 w-4 animate-spin" />
                         {progress > 0 ? `${progress}%` : 'Preparing...'}
                     </>
+                ) : isNotEnoughCredits ? (
+                    <>
+                        <Lock className="h-4 w-4" />
+                        Download All
+                    </>
                 ) : (
                     <>
                         <FolderArchive className="h-4 w-4" />
@@ -230,16 +209,6 @@ const DownloadAllMaterialsButton = ({ category, semesterName, variant = "outline
                     </>
                 )}
             </Button>
-
-            {/* Review Prompt Modal */}
-            <ReviewPromptModal
-                isOpen={showReviewModal}
-                onClose={() => {
-                    setShowReviewModal(false);
-                    setPendingDownload(false);
-                }}
-                onReviewSubmitted={handleReviewSubmitted}
-            />
         </>
     )
 }
