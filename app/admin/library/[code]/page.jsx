@@ -76,7 +76,7 @@ const SemesterOverview = () => {
             console.log("📖 Syllabi response:", data);
 
             if (data.success) {
-                console.log("✅ Syllabi loaded:", data.syllabi?.length || 0);
+                console.log(" Syllabi loaded:", data.syllabi?.length || 0);
                 setSyllabi(data.syllabi || []);
             } else {
                 console.error("❌ Failed to fetch syllabi:", data.error);

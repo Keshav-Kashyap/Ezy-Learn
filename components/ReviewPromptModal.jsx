@@ -47,7 +47,7 @@ const ReviewPromptModal = ({ isOpen, onClose, onReviewSubmitted }) => {
             if (data.success) {
                 // Show success message
                 toast.success('🎉 Thank You for Your Review!', {
-                    description: '✅ Your feedback helps us improve our service!',
+                    description: ' Your feedback helps us improve our service!',
                     duration: 4000,
                 });
 

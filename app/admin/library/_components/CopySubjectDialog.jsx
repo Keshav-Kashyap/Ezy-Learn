@@ -78,7 +78,7 @@ const CopySubjectDialog = ({ isOpen, onClose, subject, onSuccess }) => {
 
             if (result.success) {
                 toast.success(
-                    `✅ ${result.data.materialsCopied} materials copied!`,
+                    ` ${result.data.materialsCopied} materials copied!`,
                     {
                         description: result.message
                     }

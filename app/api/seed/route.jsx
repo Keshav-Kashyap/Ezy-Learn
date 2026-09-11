@@ -121,7 +121,7 @@ async function seedDatabase() {
         console.log('Study materials inserted');
 
         return NextResponse.json({
-            message: "✅ Database seeding completed successfully!",
+            message: " Database seeding completed successfully!",
             data: {
                 courses: courseData.length,
                 semesters: semesterData.length,

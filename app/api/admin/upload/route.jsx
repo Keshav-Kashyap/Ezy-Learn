@@ -33,7 +33,7 @@ export async function POST(request) {
     try {
         // Check Supabase client availability
         if (!supabase) {
-            console.warn('⚠️ Supabase not configured, using fallback URL method');
+            console.warn(' Supabase not configured, using fallback URL method');
 
             // Fallback: Store using URL instead of actual upload
             return await handleUrlBasedUpload(request);
@@ -193,12 +193,12 @@ export async function POST(request) {
                         .getPublicUrl(thumbnailFileName);
 
                     thumbnailPublicUrl = thumbUrlData.publicUrl;
-                    console.log('✅ Thumbnail uploaded:', thumbnailFileName);
+                    console.log(' Thumbnail uploaded:', thumbnailFileName);
                 } else {
-                    console.warn('⚠️ Thumbnail upload failed:', thumbError.message);
+                    console.warn(' Thumbnail upload failed:', thumbError.message);
                 }
             } catch (thumbErr) {
-                console.warn('⚠️ Error uploading thumbnail:', thumbErr.message);
+                console.warn(' Error uploading thumbnail:', thumbErr.message);
                 // Continue without thumbnail - it's optional
             }
         }
@@ -463,11 +463,11 @@ async function handleUrlBasedUpload(request) {
 
         await Promise.all(mappingPromises);
 
-        console.log('✅ Material saved to database (URL-based)');
+        console.log(' Material saved to database (URL-based)');
 
         return NextResponse.json({
             success: true,
-            message: `⚠️ Material saved and assigned to ${subjectIdArray.length} subject(s)! Note: File upload is disabled (Supabase not configured). Please add file URL manually or configure Supabase.`,
+            message: ` Material saved and assigned to ${subjectIdArray.length} subject(s)! Note: File upload is disabled (Supabase not configured). Please add file URL manually or configure Supabase.`,
             data: {
                 material: materialData[0],
                 assignedToSubjects: subjectIdArray.length,

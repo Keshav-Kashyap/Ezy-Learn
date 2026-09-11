@@ -60,7 +60,7 @@ export async function PATCH(req, { params }) {
             })
             .where(eq(usersTable.id, parseInt(id)));
 
-        console.log(`✅ User ${id} (${targetUser.name}) promoted to admin by ${adminUser.name}`);
+        console.log(` User ${id} (${targetUser.name}) promoted to admin by ${adminUser.name}`);
 
         return NextResponse.json({
             success: true,

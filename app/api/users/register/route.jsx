@@ -25,7 +25,7 @@ async function retryDbOperation(operation, maxRetries = 3) {
 
             if (i < maxRetries && isTimeoutError) {
                 const delay = 1000 * Math.pow(2, i); // 1s, 2s, 4s
-                console.log(`⚠️ Database timeout, retrying in ${delay}ms (attempt ${i + 2}/${maxRetries + 1})...`);
+                console.log(` Database timeout, retrying in ${delay}ms (attempt ${i + 2}/${maxRetries + 1})...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             } else if (i < maxRetries) {
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -38,14 +38,16 @@ async function retryDbOperation(operation, maxRetries = 3) {
 export async function POST() {
     try {
         const user = await currentUser();
-        const userEmail = user?.emailAddresses?.[0]?.emailAddress || '';
-        console.log(user.imageUrl)
+
         if (!user) {
             return NextResponse.json({
                 success: false,
                 error: "Not logged in"
             }, { status: 401 });
         }
+
+        const userEmail = user.emailAddresses?.[0]?.emailAddress || '';
+        console.log('User image:', user.imageUrl);
 
         // Check if user already exists by Clerk ID or email with retry
         const existingUser = await retryDbOperation(async () => {

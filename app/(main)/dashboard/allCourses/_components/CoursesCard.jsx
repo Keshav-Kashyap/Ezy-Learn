@@ -4,4 +4,4 @@
 // so there's a single source-of-truth. Edit the component at:
 // app/(main)/_components/CoursesCard.jsx
 
-export { default } from '../../../_components/CoursesCard';
+export { default } from '@/app/(main)/_components/CoursesCard';

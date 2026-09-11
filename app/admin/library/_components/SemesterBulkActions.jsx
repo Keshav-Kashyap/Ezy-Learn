@@ -284,7 +284,7 @@ const SemesterBulkActions = ({
                                     {selectedCount} selected semester(s)?
                                 </p>
                                 <p className="text-red-600 font-semibold">
-                                    ⚠️ This will also delete all subjects and materials in these semesters!
+                                     This will also delete all subjects and materials in these semesters!
                                 </p>
                                 <p className="text-sm">This action cannot be undone.</p>
                             </div>

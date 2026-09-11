@@ -3,6 +3,8 @@ import { subjectsTable, semestersTable, coursesTable } from "@/config/schema";
 import { NextResponse } from "next/server";
 import { checkAdminAccess } from "@/lib/admin-auth";
 import { eq, and } from "drizzle-orm";
+import { createDriveFolderForEntity } from "@/lib/googleDrive";
+
 
 // GET - Get all subjects
 export async function GET() {
@@ -83,6 +85,14 @@ export async function POST(request) {
             createdAt: new Date(),
             updatedAt: new Date()
         }).returning();
+
+        // Auto-create Google Drive folder for this subject asynchronously
+        createDriveFolderForEntity({
+            courseCategory: category,
+            semesterName: semesterName,
+            subjectName: name,
+            subjectCode: code.toUpperCase()
+        }).catch(err => console.warn(err));
 
         return NextResponse.json({
             success: true,

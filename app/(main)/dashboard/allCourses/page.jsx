@@ -1,9 +1,9 @@
 "use client"
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import CoursesCard from './_components/CoursesCard';
-import SearchFilterToolbar from '../../_components/SearchFilterToolbar'
+import SearchFilterToolbar from '@/app/(main)/_components/SearchFilterToolbar';
 import { useInfiniteCourses } from '@/hooks/useCourses';
-import GenericCardSkeleton from '../../_components/skeletons/GenericCardSkeleton';
+import GenericCardSkeleton from '@/app/(main)/_components/skeletons/GenericCardSkeleton';
 
 const page = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -60,7 +60,7 @@ const page = () => {
     }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
     return (
-        <div>
+         <div className=' max-w-7xl mx-auto space-y-12'>
             <SearchFilterToolbar
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}

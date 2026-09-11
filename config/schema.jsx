@@ -156,3 +156,15 @@ export const contactSubmissionsTable = pgTable("contact_submissions", {
     createdAt: timestamp().defaultNow()
 });
 
+// User Profile Table
+export const userProfileTable = pgTable("user_profile", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userId: varchar({ length: 255 }).notNull().unique(), // Clerk user ID
+    name: varchar({ length: 255 }).notNull(),
+    course: varchar({ length: 100 }).notNull(),
+    semester: varchar({ length: 100 }).notNull(),
+    createdAt: timestamp().defaultNow(),
+    updatedAt: timestamp().defaultNow()
+});
+
+

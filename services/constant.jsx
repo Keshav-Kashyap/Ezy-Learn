@@ -6,14 +6,19 @@ import { Home, Code, Database, Cpu, BookOpen, GraduationCap } from "lucide-react
 export const menuItems = [
     {
         title: "Dashboard",
-        icon: "Home", // Icon name as string
+        icon: "Home", // Main Dashboard (former Dashboard 2 layout)
         href: "/dashboard",
         isActive: true,
     },
     {
-        title: "Popular Notes",
-        icon: "TrendingUp",
+        title: "Popular",
+        icon: "TrendingUp", // Former Dashboard 1 layout
         href: "/dashboard/popular",
+    },
+    {
+        title: "All Notes",
+        icon: "FileText",
+        href: "/dashboard/allNotes",
     },
     {
         title: "All Courses",

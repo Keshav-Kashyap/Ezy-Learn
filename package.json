@@ -41,6 +41,7 @@
     "drizzle-orm": "^0.44.5",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.22",
+    "googleapis": "^178.1.1",
     "jszip": "^3.10.1",
     "lightningcss": "^1.32.0",
     "lucide-react": "^0.544.0",

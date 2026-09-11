@@ -29,7 +29,7 @@ export async function GET(request) {
             .where(and(...conditions))
             .orderBy(desc(syllabusTable.createdAt));
 
-        console.log(`✅ Found ${syllabi.length} syllabi for category: ${category}`);
+        console.log(` Found ${syllabi.length} syllabi for category: ${category}`);
 
         return NextResponse.json({
             success: true,
@@ -86,7 +86,7 @@ export async function POST(request) {
             isActive: true
         }).returning();
 
-        console.log("✅ Syllabus uploaded successfully:", newSyllabus.id);
+        console.log(" Syllabus uploaded successfully:", newSyllabus.id);
 
         return NextResponse.json({
             success: true,

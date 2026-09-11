@@ -166,7 +166,7 @@ const DownloadAllMaterialsButton = ({ category, semesterName, variant = "outline
             const zipFileName = `${semester.replace(/[/\\?%*:|"<>]/g, '-')}_Materials.zip`
             saveAs(zipBlob, zipFileName)
 
-            toast.success(`✅ Downloaded ${downloadedCount} files!`, {
+            toast.success(` Downloaded ${downloadedCount} files!`, {
                 description: `${semester} materials saved as ${zipFileName}`
             })
 

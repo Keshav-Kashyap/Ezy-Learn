@@ -1,6 +1,9 @@
 "use client"
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useUser } from '@clerk/nextjs'
+import { useRouter, usePathname } from 'next/navigation'
+import axios from 'axios'
 import AppSidebar from "./_components/AppSidebar"
 import WelcomeContainer from './_components/AppWelcomeContainer'
 import Navbar from './_components/AppNavbar'
@@ -10,9 +13,27 @@ import GPTSidebar from '@/components/GPTSidebar'
 import { menuItems, bottomMenuItems } from '../../services/constant'
 
 const DashboardProvider = ({ children }) => {
+    const { user, isLoaded } = useUser();
+    const router = useRouter();
+    const pathname = usePathname();
     const [aiSidebarOpen, setAISidebarOpen] = useState(false);
     const [aiMessages, setAIMessages] = useState([]);
     const [sidebarWidth, setSidebarWidth] = useState(450);
+
+    useEffect(() => {
+        if (!isLoaded || !user) return;
+
+        // Check if user has completed profile setup
+        axios.get('/api/user-profile')
+            .then(res => {
+                if (res.data.success && !res.data.exists) {
+                    router.push('/create-profile');
+                }
+            })
+            .catch(err => {
+                console.error("Error checking user profile status:", err);
+            });
+    }, [user, isLoaded, pathname]);
 
     React.useEffect(() => {
         const handleOpenAI = () => setAISidebarOpen(true);

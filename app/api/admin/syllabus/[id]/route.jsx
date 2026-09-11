@@ -33,7 +33,7 @@ export async function DELETE(request, { params }) {
             );
         }
 
-        console.log("✅ Syllabus deleted successfully");
+        console.log(" Syllabus deleted successfully");
 
         return NextResponse.json({
             success: true,

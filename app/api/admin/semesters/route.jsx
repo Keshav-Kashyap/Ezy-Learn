@@ -3,6 +3,8 @@ import { db } from "@/config/db";
 import { semestersTable } from "@/config/schema";
 import { eq } from "drizzle-orm";
 import { checkAdminAccess } from "@/lib/admin-auth";
+import { createDriveFolderForEntity } from "@/lib/googleDrive";
+
 
 export async function GET() {
     try {
@@ -58,6 +60,12 @@ export async function POST(request) {
             createdAt: new Date(),
             updatedAt: new Date()
         }).returning();
+
+        // Auto-create Google Drive folder for this semester asynchronously
+        createDriveFolderForEntity({
+            courseCategory: category,
+            semesterName: name
+        }).catch(err => console.warn(err));
 
         return NextResponse.json({
             success: true,

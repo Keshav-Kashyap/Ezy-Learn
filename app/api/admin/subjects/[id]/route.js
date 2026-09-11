@@ -90,13 +90,13 @@ export async function DELETE(req, { params }) {
         await db.delete(materialSubjectMappingTable)
             .where(eq(materialSubjectMappingTable.subjectId, parseInt(id)));
 
-        console.log(`✅ Deleted material mappings for subject ${id}`);
+        console.log(` Deleted material mappings for subject ${id}`);
 
         // Then delete the subject
         await db.delete(subjectsTable)
             .where(eq(subjectsTable.id, parseInt(id)));
 
-        console.log(`✅ Subject ${id} deleted successfully`);
+        console.log(` Subject ${id} deleted successfully`);
 
         return NextResponse.json({
             success: true,

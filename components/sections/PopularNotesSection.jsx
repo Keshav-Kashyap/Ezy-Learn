@@ -26,6 +26,7 @@ const PopularNotesSection = ({ notes, loading, isSignedIn }) => {
             fileUrl: note.fileUrl,
             fileName: note.title,
             fileType: note.type,
+            materialId: note.id,
             userDetail,
             setUserDetail,
         });
