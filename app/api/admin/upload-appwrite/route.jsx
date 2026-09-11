@@ -123,7 +123,7 @@ export async function POST(request) {
             appwriteFile
         );
 
-        console.log("✅ File uploaded to Appwrite:", uploadedFile.$id);
+        console.log(" File uploaded to Appwrite:", uploadedFile.$id);
 
         // Get file URL
         const fileUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${uploadedFile.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}&mode=admin`;
@@ -144,9 +144,9 @@ export async function POST(request) {
                 );
 
                 thumbnailPublicUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${uploadedThumbnail.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}&mode=admin`;
-                console.log('✅ Thumbnail uploaded to Appwrite:', uploadedThumbnail.$id);
+                console.log(' Thumbnail uploaded to Appwrite:', uploadedThumbnail.$id);
             } catch (thumbErr) {
-                console.warn('⚠️ Thumbnail upload to Appwrite failed:', thumbErr.message);
+                console.warn(' Thumbnail upload to Appwrite failed:', thumbErr.message);
             }
         }
 
@@ -159,15 +159,13 @@ export async function POST(request) {
                 title: title,
                 description: `Uploaded via Appwrite by admin`,
                 fileUrl: fileUrl,
-                fileSize: file.size.toString(),
-                uploadedBy: adminCheck.user.id,
                 type: file.type,
                 imageUrl: thumbnailPublicUrl,
                 tags: JSON.stringify(tags)
             })
             .returning();
 
-        console.log("✅ Material saved to database:", newMaterial.id);
+        console.log(" Material saved to database:", newMaterial.id);
 
         // Create subject mappings
         const mappings = subjectIdArray.map(subjectId => ({
@@ -178,7 +176,7 @@ export async function POST(request) {
         await db.insert(materialSubjectMappingTable)
             .values(mappings);
 
-        console.log(`✅ Created ${mappings.length} subject mapping(s)`);
+        console.log(` Created ${mappings.length} subject mapping(s)`);
 
         return NextResponse.json({
             success: true,

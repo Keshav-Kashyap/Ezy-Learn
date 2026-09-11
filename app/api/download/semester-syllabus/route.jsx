@@ -36,7 +36,7 @@ export async function POST(request) {
                 )
             );
 
-        console.log(`✅ Found ${syllabi.length} syllabus files`);
+        console.log(` Found ${syllabi.length} syllabus files`);
 
         if (syllabi.length === 0) {
             return NextResponse.json({

@@ -68,8 +68,8 @@ const fetchDashboardStats = async () => {
     return data;
 };
 
-const fetchPopularNotes = async (limit = 6) => {
-    const response = await fetch(`/api/popularNotes?limit=${limit}`);
+const fetchPopularNotes = async (limit = 100, fetchAll = true) => {
+    const response = await fetch(`/api/popularNotes?limit=${limit}&all=${fetchAll}`);
     if (!response.ok) {
         throw new Error('Failed to fetch popular notes');
     }
@@ -245,10 +245,10 @@ export function useDashboardStats() {
  * Hook to fetch popular notes with caching
  * Data cached for 5 minutes to prevent unnecessary API calls
  */
-export function usePopularNotes(limit = 6) {
+export function usePopularNotes(limit = 100, fetchAll = true) {
     return useQuery({
-        queryKey: [...courseKeys.popularNotes, limit],
-        queryFn: () => fetchPopularNotes(limit),
+        queryKey: [...courseKeys.popularNotes, limit, fetchAll],
+        queryFn: () => fetchPopularNotes(limit, fetchAll),
         staleTime: 5 * 60 * 1000, // 5 minutes - no refetch for 5 minutes
         gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache
     });
@@ -322,13 +322,45 @@ export function useSemesters(category) {
  * Hook to fetch semester detail with caching
  * Data cached for 5 minutes
  */
-export function useSemesterDetail(code, semesterId) {
+export function useSemesterDetail(code, semesterId, optionsEnabled = true) {
     return useQuery({
         queryKey: courseKeys.semester(code, semesterId),
         queryFn: () => fetchSemesterDetail(code, semesterId),
-        enabled: !!code && !!semesterId, // Only run if both params are provided
+        enabled: !!code && !!semesterId && Boolean(optionsEnabled), // Only run if code, semesterId, and optionsEnabled are true
         staleTime: 5 * 60 * 1000, // 5 minutes - no refetch for 5 minutes
         gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache
+    });
+}
+
+/**
+ * Hook to fetch user profile with React Query caching
+ */
+export function useUserProfile() {
+    return useQuery({
+        queryKey: ['userProfile'],
+        queryFn: async () => {
+            const res = await fetch('/api/user-profile');
+            if (!res.ok) throw new Error('Failed to fetch user profile');
+            return res.json();
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes cache
+        gcTime: 10 * 60 * 1000,
+    });
+}
+
+/**
+ * Hook to fetch available courses with React Query caching
+ */
+export function useAvailableCourses() {
+    return useQuery({
+        queryKey: ['availableCourses'],
+        queryFn: async () => {
+            const res = await fetch('/api/available-courses');
+            if (!res.ok) throw new Error('Failed to fetch available courses');
+            return res.json();
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes cache
+        gcTime: 10 * 60 * 1000,
     });
 }
 

@@ -3,6 +3,8 @@ import { db } from "@/config/db";
 import { coursesTable, usersTable, semestersTable } from '@/config/schema'
 import { eq } from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
+import { createDriveFolderForEntity } from "@/lib/googleDrive";
+
 
 export async function GET() {
     try {
@@ -124,7 +126,7 @@ export async function POST(request) {
                         .from('course-images')
                         .getPublicUrl(filePath);
                     imageUrl = publicUrl;
-                    console.log('✅ Image uploaded successfully:', imageUrl);
+                    console.log(' Image uploaded successfully:', imageUrl);
                 }
             } catch (error) {
                 console.error('❌ Error uploading image:', error);
@@ -165,6 +167,15 @@ export async function POST(request) {
             }).returning();
 
             createdSemesters.push(semester[0]);
+        }
+
+        // Auto-create Google Drive folders for new course & semesters asynchronously
+        createDriveFolderForEntity({ courseCategory: category.toLowerCase() }).catch(err => console.warn(err));
+        for (let i = 1; i <= totalSemesters; i++) {
+            createDriveFolderForEntity({
+                courseCategory: category.toLowerCase(),
+                semesterName: `Semester ${i}`
+            }).catch(err => console.warn(err));
         }
 
         return NextResponse.json({

@@ -269,7 +269,7 @@ export default function AdminUsers() {
                             Are you sure you want to make <strong className="text-gray-900 dark:text-white">{selectedUser?.name}</strong> ({selectedUser?.email}) an admin?
                             <br /><br />
                             <span className="text-orange-600 dark:text-orange-400">
-                                ⚠️ Admins have full access to manage users, courses, and content.
+                                 Admins have full access to manage users, courses, and content.
                             </span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>

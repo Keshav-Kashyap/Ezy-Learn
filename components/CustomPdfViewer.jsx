@@ -258,6 +258,7 @@ export default function CustomPdfViewer({ material, onClose }) {
             fileUrl: material.fileUrl,
             fileName: material.title,
             fileType: material.type || "pdf",
+            materialId: material.id,
             userDetail,
             setUserDetail,
         });

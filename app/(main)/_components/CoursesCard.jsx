@@ -22,7 +22,7 @@ import GenericCardSkeleton from './skeletons/GenericCardSkeleton';
 import CourseActions from "@/app/admin/library/_components/CourseActions";
 
 
-const CoursesCard = ({ courses, viewMode, searchQuery = '', isAdmin = false, baseRoute = "/library", onUpdate }) => {
+const CoursesCard = ({ courses, viewMode, searchQuery = '', isAdmin = false, baseRoute = "/library", onUpdate, showPopularBadge = false }) => {
     const router = useRouter();
 
     // Use React Query hook only if courses prop is not provided
@@ -54,12 +54,15 @@ const CoursesCard = ({ courses, viewMode, searchQuery = '', isAdmin = false, bas
                             key={course.id || course.title}
                             item={course}
                             imageUrl={course.image}
+                            showImageHeader={true}
                             title={course.title}
                             subtitle={course.subtitle}
                             description={course.description}
                             badges={[
-                                { label: 'Popular', position: 'top-right', bgColor: 'bg-yellow-400 text-yellow-900' },
-                                { label: course.category, position: 'top-left', bgColor: 'bg-white/20 text-white' }
+                                showPopularBadge
+                                    ? { label: 'Popular', position: 'top-right', bgColor: 'bg-yellow-400 text-yellow-950 font-bold shadow-sm' }
+                                    : { label: 'Course', position: 'top-right', bgColor: 'bg-indigo-600 text-white shadow-md font-bold' },
+                                { label: course.category || 'Degree', position: 'top-left', bgColor: 'bg-slate-900/80 backdrop-blur-md text-white' }
                             ]}
                             stats={[
                                 {

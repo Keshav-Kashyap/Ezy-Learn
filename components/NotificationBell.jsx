@@ -57,7 +57,7 @@ const NotificationBell = ({ collapsed = false }) => {
 
     const getNotificationIcon = (type) => {
         const icons = {
-            course_created: '🎓',
+            course_created: '',
             semester_created: '📚',
             subject_created: '📖',
             material_uploaded: '📄',

@@ -130,7 +130,7 @@ export function generateNotificationMessage(type, data) {
     switch (type) {
         case NOTIFICATION_TYPES.COURSE_CREATED:
             return {
-                title: '🎓 New Course Available!',
+                title: ' New Course Available!',
                 message: `A new course "${courseName}" has been added to the platform. Check it out now!`,
             };
 

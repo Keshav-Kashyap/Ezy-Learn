@@ -1,5 +1,5 @@
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 const GROQ_TIMEOUT_MS = 45000;
 
 const SYSTEM_PROMPT = `You are a helpful AI assistant for EzyStudy, an educational platform.
@@ -15,7 +15,7 @@ IMPORTANT: Format your response using Markdown with:
 - # Headings for main points
 - Bullet points (- or *) for lists
 - Code blocks (wrap with \`\`\`language) for code examples
-- Emojis (🎓📚✨🔥) to make content engaging
+- Emojis (📚✨🔥) to make content engaging
 - Line breaks between sections for readability`;
 
 export async function callGroqChat({ message, context, history, apiKey }) {

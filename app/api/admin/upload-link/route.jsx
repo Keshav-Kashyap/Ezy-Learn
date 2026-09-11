@@ -100,7 +100,7 @@ export async function POST(request) {
             isActive: true,
         }).returning();
 
-        console.log('✅ Material created:', newMaterial.id);
+        console.log(' Material created:', newMaterial.id);
 
         // Create mappings for all selected subjects
         const mappings = subjectIdArray.map(subjectId => ({
@@ -110,7 +110,7 @@ export async function POST(request) {
 
         await db.insert(materialSubjectMappingTable).values(mappings);
 
-        console.log(`✅ Created ${mappings.length} material-subject mappings`);
+        console.log(` Created ${mappings.length} material-subject mappings`);
 
         return NextResponse.json({
             success: true,

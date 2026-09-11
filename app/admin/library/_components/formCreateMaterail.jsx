@@ -10,8 +10,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Upload, FileText, Loader2, Check, X, Link2 } from 'lucide-react'
+import { Upload, FileText, Loader2, Check, X, Link2, HardDrive, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
+
 
 const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode = false, materialData = null }) => {
     const [fileName, setFileName] = useState('')
@@ -21,7 +22,53 @@ const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode
     const [uploading, setUploading] = useState(false)
     const [uploadProgress, setUploadProgress] = useState(0)
     const [uploadMode, setUploadMode] = useState('file') // 'file' or 'link'
-    const [uploadStorage, setUploadStorage] = useState('supabase') // 'supabase' or 'appwrite'
+    const [uploadStorage, setUploadStorage] = useState('supabase') // 'supabase', 'appwrite', or 'googledrive'
+    const [isSyncingFolders, setIsSyncingFolders] = useState(false)
+    const [driveStatus, setDriveStatus] = useState({ isConfigured: false, hasRefreshToken: false, authUrl: null })
+
+    const fetchDriveStatus = async () => {
+        try {
+            const res = await fetch('/api/admin/google/status')
+            const contentType = res.headers.get('content-type')
+            if (res.ok && contentType && contentType.includes('application/json')) {
+                const data = await res.json()
+                if (data.success) {
+                    setDriveStatus(data)
+                }
+            }
+        } catch (err) {
+            console.error("Failed to check Google Drive status:", err)
+        }
+    }
+
+    useEffect(() => {
+        fetchDriveStatus()
+    }, [uploadStorage])
+
+    const handleSyncDriveFolders = async () => {
+        setIsSyncingFolders(true)
+        try {
+            const res = await fetch('/api/admin/googledrive/sync-folders', { method: 'POST' })
+            const contentType = res.headers.get('content-type')
+            if (!contentType || !contentType.includes('application/json')) {
+                const errText = await res.text()
+                throw new Error(errText.includes('Refresh Token missing') ? 'Google Drive Refresh Token missing. Set GOOGLE_REFRESH_TOKEN in .env' : 'Server returned error')
+            }
+            const data = await res.json()
+            if (data.success) {
+                toast.success(`Google Drive Folders Synced! ${data.data.totalFoldersSynced} subject folders created/verified.`)
+            } else {
+                toast.error(data.error || 'Failed to sync Google Drive folders.')
+            }
+        } catch (err) {
+            console.error("Folder sync error:", err)
+            toast.error(err.message || "Error syncing Google Drive folders")
+        } finally {
+            setIsSyncingFolders(false)
+        }
+    }
+
+
     const [fileUrl, setFileUrl] = useState('')
     const [isPopular, setIsPopular] = useState(false)
     const [thumbnailUrl, setThumbnailUrl] = useState('')
@@ -270,9 +317,11 @@ const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode
                 }
 
                 // Choose endpoint based on storage selection
-                const uploadEndpoint = uploadStorage === 'appwrite'
-                    ? '/api/admin/upload-appwrite'
-                    : '/api/admin/upload';
+                const uploadEndpoint = uploadStorage === 'googledrive'
+                    ? '/api/admin/upload-googledrive'
+                    : uploadStorage === 'appwrite'
+                        ? '/api/admin/upload-appwrite'
+                        : '/api/admin/upload';
 
                 const xhr = new XMLHttpRequest()
 
@@ -293,7 +342,12 @@ const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode
                                 reject(new Error('Invalid response format'))
                             }
                         } else {
-                            reject(new Error(`Upload failed with status ${xhr.status}`))
+                            try {
+                                const errResult = JSON.parse(xhr.responseText)
+                                reject(new Error(errResult.error || errResult.message || `Upload failed with status ${xhr.status}`))
+                            } catch (e) {
+                                reject(new Error(`Upload failed with status ${xhr.status}`))
+                            }
                         }
                     })
 
@@ -313,8 +367,9 @@ const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode
 
                 if (result.success) {
                     setUploadProgress(100)
-                    const storageType = uploadStorage === 'appwrite' ? 'Appwrite' : 'Supabase';
-                    toast.success(`Material uploaded to ${storageType} and assigned to ${selectedSubjects.length} subject(s)!`)
+                    const storageType = uploadStorage === 'googledrive' ? 'Google Drive' : uploadStorage === 'appwrite' ? 'Appwrite' : 'Supabase';
+                    toast.success(result.message || `Material uploaded to ${storageType} and assigned to ${selectedSubjects.length} subject(s)!`)
+
 
                     // Reset form
                     setDocTitle('')
@@ -483,14 +538,14 @@ const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode
                 {!editMode && uploadMode === 'file' && (
                     <div className="space-y-2">
                         <Label className="text-gray-900 dark:text-white font-semibold">Storage Provider *</Label>
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                             <Button
                                 type="button"
                                 variant={uploadStorage === 'supabase' ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => setUploadStorage('supabase')}
                                 className={uploadStorage === 'supabase' 
-                                    ? 'bg-green-600 text-white hover:bg-green-700 shadow-md' 
+                                    ? 'bg-green-600 text-white hover:bg-green-700 shadow-md font-bold' 
                                     : 'text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}
                                 disabled={uploading}
                             >
@@ -503,17 +558,34 @@ const FormCreateMaterial = ({ onClose, onSuccess, prefilledSubjectCode, editMode
                                 size="sm"
                                 onClick={() => setUploadStorage('appwrite')}
                                 className={uploadStorage === 'appwrite' 
-                                    ? 'bg-pink-600 text-white hover:bg-pink-700 shadow-md' 
+                                    ? 'bg-pink-600 text-white hover:bg-pink-700 shadow-md font-bold' 
                                     : 'text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}
                                 disabled={uploading}
                             >
                                 <Upload className="h-4 w-4 mr-1" />
                                 Appwrite
                             </Button>
+                            <Button
+                                type="button"
+                                variant={uploadStorage === 'googledrive' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setUploadStorage('googledrive')}
+                                className={uploadStorage === 'googledrive' 
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md font-bold' 
+                                    : 'text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}
+                                disabled={uploading}
+                            >
+                                <HardDrive className="h-4 w-4 mr-1 text-amber-300" />
+                                Google Drive
+                            </Button>
                         </div>
                         <p className="text-xs text-gray-500">
                             {uploading && <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />}
-                            {uploading ? `Uploading to ${uploadStorage === 'appwrite' ? 'Appwrite' : 'Supabase'}...` : 'Choose where to store the uploaded file'}
+                            {uploading
+                                ? `Uploading to ${uploadStorage === 'googledrive' ? 'Google Drive' : uploadStorage === 'appwrite' ? 'Appwrite' : 'Supabase'}...`
+                                : uploadStorage === 'googledrive'
+                                    ? 'Files will be saved directly into Course > Semester > Subject folder on Google Drive'
+                                    : 'Choose where to store the uploaded file'}
                         </p>
                     </div>
                 )}

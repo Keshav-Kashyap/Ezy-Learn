@@ -6,38 +6,102 @@ import { eq, desc, sql, like } from "drizzle-orm";
 
 export async function GET(request) {
     try {
-        // Get limit from query params, default to 6
+        // Get limit & all flag from query params
         const { searchParams } = new URL(request.url);
-        const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '6')));
+        const limit = Math.max(1, Math.min(500, parseInt(searchParams.get('limit') || '100')));
+        const fetchAll = searchParams.get('all') === 'true' || searchParams.get('allNotes') === 'true';
 
-        // Fetch popular notes with their subjects through mapping table
-        const notesWithSubjects = await db
-            .select({
-                id: studyMaterialsTable.id,
-                title: studyMaterialsTable.title,
-                description: studyMaterialsTable.description,
-                fileUrl: studyMaterialsTable.fileUrl,
-                downloadCount: studyMaterialsTable.downloadCount,
-                likes: studyMaterialsTable.likes,
-                type: studyMaterialsTable.type,
-                imageUrl: studyMaterialsTable.imageUrl,
-                tags: studyMaterialsTable.tags,
-                createdAt: studyMaterialsTable.createdAt,
-                subjectId: subjectsTable.id,
-                subjectName: subjectsTable.name,
-            })
-            .from(studyMaterialsTable)
-            .leftJoin(
-                materialSubjectMappingTable,
-                eq(studyMaterialsTable.id, materialSubjectMappingTable.materialId)
-            )
-            .leftJoin(
-                subjectsTable,
-                eq(materialSubjectMappingTable.subjectId, subjectsTable.id)
-            )
-            .where(like(studyMaterialsTable.tags, '%popular%'))
-            .orderBy(desc(studyMaterialsTable.downloadCount))
-            .limit(limit);
+        // Fetch notes with their subjects through mapping table
+        let notesWithSubjects = [];
+
+        if (!fetchAll) {
+            // Fetch notes tagged as 'popular'
+            notesWithSubjects = await db
+                .select({
+                    id: studyMaterialsTable.id,
+                    title: studyMaterialsTable.title,
+                    description: studyMaterialsTable.description,
+                    fileUrl: studyMaterialsTable.fileUrl,
+                    downloadCount: studyMaterialsTable.downloadCount,
+                    likes: studyMaterialsTable.likes,
+                    type: studyMaterialsTable.type,
+                    imageUrl: studyMaterialsTable.imageUrl,
+                    tags: studyMaterialsTable.tags,
+                    createdAt: studyMaterialsTable.createdAt,
+                    subjectId: subjectsTable.id,
+                    subjectName: subjectsTable.name,
+                })
+                .from(studyMaterialsTable)
+                .leftJoin(
+                    materialSubjectMappingTable,
+                    eq(studyMaterialsTable.id, materialSubjectMappingTable.materialId)
+                )
+                .leftJoin(
+                    subjectsTable,
+                    eq(materialSubjectMappingTable.subjectId, subjectsTable.id)
+                )
+                .where(like(studyMaterialsTable.tags, '%popular%'))
+                .orderBy(desc(studyMaterialsTable.downloadCount), desc(studyMaterialsTable.likes))
+                .limit(limit);
+
+            // Fallback for popular: if no notes tagged '%popular%', fetch top downloaded/liked notes
+            if (notesWithSubjects.length === 0) {
+                notesWithSubjects = await db
+                    .select({
+                        id: studyMaterialsTable.id,
+                        title: studyMaterialsTable.title,
+                        description: studyMaterialsTable.description,
+                        fileUrl: studyMaterialsTable.fileUrl,
+                        downloadCount: studyMaterialsTable.downloadCount,
+                        likes: studyMaterialsTable.likes,
+                        type: studyMaterialsTable.type,
+                        imageUrl: studyMaterialsTable.imageUrl,
+                        tags: studyMaterialsTable.tags,
+                        createdAt: studyMaterialsTable.createdAt,
+                        subjectId: subjectsTable.id,
+                        subjectName: subjectsTable.name,
+                    })
+                    .from(studyMaterialsTable)
+                    .leftJoin(
+                        materialSubjectMappingTable,
+                        eq(studyMaterialsTable.id, materialSubjectMappingTable.materialId)
+                    )
+                    .leftJoin(
+                        subjectsTable,
+                        eq(materialSubjectMappingTable.subjectId, subjectsTable.id)
+                    )
+                    .orderBy(desc(studyMaterialsTable.downloadCount), desc(studyMaterialsTable.likes))
+                    .limit(Math.min(limit, 10));
+            }
+        } else {
+            // fetchAll === true: fetch ALL notes
+            notesWithSubjects = await db
+                .select({
+                    id: studyMaterialsTable.id,
+                    title: studyMaterialsTable.title,
+                    description: studyMaterialsTable.description,
+                    fileUrl: studyMaterialsTable.fileUrl,
+                    downloadCount: studyMaterialsTable.downloadCount,
+                    likes: studyMaterialsTable.likes,
+                    type: studyMaterialsTable.type,
+                    imageUrl: studyMaterialsTable.imageUrl,
+                    tags: studyMaterialsTable.tags,
+                    createdAt: studyMaterialsTable.createdAt,
+                    subjectId: subjectsTable.id,
+                    subjectName: subjectsTable.name,
+                })
+                .from(studyMaterialsTable)
+                .leftJoin(
+                    materialSubjectMappingTable,
+                    eq(studyMaterialsTable.id, materialSubjectMappingTable.materialId)
+                )
+                .leftJoin(
+                    subjectsTable,
+                    eq(materialSubjectMappingTable.subjectId, subjectsTable.id)
+                )
+                .orderBy(desc(studyMaterialsTable.createdAt), desc(studyMaterialsTable.downloadCount))
+                .limit(limit);
+        }
 
         // Group materials with their subjects
         const notesMap = new Map();

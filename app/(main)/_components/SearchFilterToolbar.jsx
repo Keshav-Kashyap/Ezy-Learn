@@ -18,40 +18,70 @@ import { Filter, Grid, List, Search } from 'lucide-react';
 const SearchFilterToolbar = ({
     searchValue = '',
     onSearchChange = () => { },
+    showTypeFilter = false,
+    searchType = 'all', // 'all' | 'notes' | 'courses'
+    onSearchTypeChange = () => { },
     viewMode = 'grid',
     onViewModeChange = () => { },
-    onFilterClick = () => { }
 }) => {
     return (
-        <div className="mb-6 p-6 rounded-lg bg-white dark:bg-[rgb(38,38,36)] border border-gray-300 dark:border-gray-700">
-            {/* Search and Controls in one row */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between" >
-                <div className="flex-1 max-w-md relative">
+        <div className="mb-6 p-6 mt-5 rounded-2xl bg-white dark:bg-[rgb(38,38,36)] border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+                {/* Search Bar */}
+                <div className="flex-1 relative">
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500 dark:text-slate-400" />
                     <Input
-                        placeholder="Search courses, categories, or topics..."
+                        placeholder="Search any note, topic, subject, or course (e.g., OS, Java, B.Tech)..."
                         value={searchValue}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        className="pl-12 h-12 text-base border shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[rgb(24,24,24)] text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 border-gray-300 dark:border-gray-600"
+                        className="pl-12 h-12 text-base border shadow-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[rgb(24,24,24)] text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 border-gray-300 dark:border-gray-600 rounded-xl"
                     />
                 </div>
 
-                <div className="flex gap-3 items-center">
-                    <Button
-                        variant="outline"
-                        onClick={onFilterClick}
-                        className="h-12 px-4 shadow-sm border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-                        <Filter className="h-4 w-4 mr-2" />
-                        Filter
-                    </Button>
+                {/* Filter Type Pills: All | Notes | Courses (Only displayed when showTypeFilter is true) */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {showTypeFilter && (
+                        <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-[rgb(24,24,24)] border border-gray-200 dark:border-gray-700">
+                            <button
+                                type="button"
+                                onClick={() => onSearchTypeChange('all')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${searchType === 'all'
+                                    ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                All
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onSearchTypeChange('notes')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${searchType === 'notes'
+                                    ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                Notes
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onSearchTypeChange('courses')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${searchType === 'courses'
+                                    ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                Courses
+                            </button>
+                        </div>
+                    )}
 
-                    <div className="flex rounded-lg overflow-hidden shadow-sm border border-gray-300 dark:border-gray-600">
+                    {/* View Mode Grid/List Toggle */}
+                    <div className="flex rounded-xl overflow-hidden shadow-xs border border-gray-300 dark:border-gray-600">
                         <Button
                             variant={viewMode === "grid" ? "default" : "ghost"}
                             size="sm"
                             onClick={() => onViewModeChange('grid')}
-                            className={`rounded-none h-12 px-4 ${viewMode === "grid"
+                            className={`rounded-none h-10 px-3.5 ${viewMode === "grid"
                                 ? "bg-blue-600 text-white hover:bg-blue-700"
                                 : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                                 }`}
@@ -62,7 +92,7 @@ const SearchFilterToolbar = ({
                             variant={viewMode === "list" ? "default" : "ghost"}
                             size="sm"
                             onClick={() => onViewModeChange('list')}
-                            className={`rounded-none h-12 px-4 ${viewMode === "list"
+                            className={`rounded-none h-10 px-3.5 ${viewMode === "list"
                                 ? "bg-blue-600 text-white hover:bg-blue-700"
                                 : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                                 }`}

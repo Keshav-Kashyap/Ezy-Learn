@@ -63,7 +63,7 @@ export async function GET(request) {
                         totalMaterials = result?.count || 0;
                         console.log(`   📄 Materials found: ${totalMaterials}`);
                     } else {
-                        console.log(`   ⚠️ No subjects found for category: ${course.category}`);
+                        console.log(`    No subjects found for category: ${course.category}`);
                     }
 
                     const courseStats = {
@@ -73,7 +73,7 @@ export async function GET(request) {
                         students: Math.floor(totalMaterials * 3.5) + Math.floor(Math.random() * 100), // Estimated students
                     };
 
-                    console.log(`   ✅ Stats: ${semesters.length} semesters, ${totalMaterials} materials, ${courseStats.students} students`);
+                    console.log(`    Stats: ${semesters.length} semesters, ${totalMaterials} materials, ${courseStats.students} students`);
 
                     return courseStats;
                 } catch (error) {

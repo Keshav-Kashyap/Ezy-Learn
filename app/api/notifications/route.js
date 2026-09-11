@@ -27,7 +27,7 @@ async function retryDbOperation(operation, maxRetries = 3, initialDelay = 1000) 
             if (i < maxRetries && isTimeoutError) {
                 // Exponential backoff: 1s, 2s, 4s, 8s
                 const delay = initialDelay * Math.pow(2, i);
-                console.log(`⚠️ Database timeout, retrying in ${delay}ms (attempt ${i + 2}/${maxRetries + 1})...`);
+                console.log(` Database timeout, retrying in ${delay}ms (attempt ${i + 2}/${maxRetries + 1})...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             } else if (i < maxRetries) {
                 // For other errors, shorter delay

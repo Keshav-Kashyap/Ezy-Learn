@@ -7,7 +7,11 @@ import Link from 'next/link';
 import SubjectActions from '@/app/admin/library/_components/SubjectActions';
 import FormCreateMaterial from '@/app/admin/library/_components/formCreateMaterail';
 import { UserDetailContext } from '@/context/UserDetailContext';
-import CustomPdfViewer from '@/components/CustomPdfViewer';
+import dynamic from 'next/dynamic';
+
+const CustomPdfViewer = dynamic(() => import('@/components/CustomPdfViewer'), {
+    ssr: false,
+});
 import {
     Dialog,
     DialogTrigger,
@@ -301,8 +305,8 @@ const SubjectCard = ({ subject, onDownload, isAdmin, onUpdate }) => {
                                         disabled={deletingMaterialId === material.id}
                                         className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg font-medium transition-all shadow-sm text-sm disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                                     >
-                                        <BookOpen className="h-4 w-4" />
-                                        <span>Learn</span>
+                                        <Eye className="h-4 w-4" />
+                                        <span>View</span>
                                     </button>
                                     <button
                                         onClick={() => handleDownloadClick(material)}

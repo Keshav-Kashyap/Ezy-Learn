@@ -17,7 +17,8 @@ import {
     FileText,
     ChevronRight,
     TrendingUp,
-    MessageSquare
+    MessageSquare,
+    Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -68,6 +69,7 @@ const AppSidebar = ({ menuItems, bottomMenuItems, isAdmin = false }) => {
         FileText,
         TrendingUp,
         MessageSquare,
+        Sparkles,
         'trending-up': TrendingUp
     };
 

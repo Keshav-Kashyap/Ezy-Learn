@@ -33,25 +33,29 @@ export default function UserAutoRegister() {
                     }
                 });
 
-                const result = await response.json();
-
-                if (result.success) {
-                    console.log('User registration check completed:', result.message);
-                    setRegistered(true);
-                    // Store in session to prevent duplicate calls
-                    sessionStorage.setItem(sessionKey, 'true');
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('User registration check completed:', result.message);
+                    } else {
+                        console.error('User registration failed:', result.error);
+                    }
                 } else {
-                    console.error(' User registration failed:', result.error);
+                    console.warn('User registration endpoint returned non-JSON response:', response.status);
                 }
             } catch (error) {
-                console.error(' Error during user registration:', error);
+                console.error('Error during user registration:', error);
             } finally {
+                // Always mark as registered to prevent infinite loop retries on errors
+                setRegistered(true);
+                sessionStorage.setItem(sessionKey, 'true');
                 setIsRegistering(false);
             }
         }
 
         registerUser();
-    }, [isLoaded, isSignedIn, user, registered, isRegistering]);
+    }, [isLoaded, isSignedIn, user?.id, registered, isRegistering]);
 
     // This component doesn't render anything visible
     return null;

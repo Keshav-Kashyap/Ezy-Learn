@@ -52,6 +52,7 @@ const SemesterDetail = ({ basePath }) => {
             fileUrl: material.fileUrl,
             fileName: material.title,
             fileType: material.type,
+            materialId: material.id,
             userDetail,
             setUserDetail,
         });
