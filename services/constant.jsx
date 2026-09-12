@@ -13,17 +13,17 @@ export const menuItems = [
     {
         title: "Popular",
         icon: "TrendingUp", // Former Dashboard 1 layout
-        href: "/dashboard/popular",
+        href: "/popular",
     },
     {
         title: "All Notes",
         icon: "FileText",
-        href: "/dashboard/allNotes",
+        href: "/allNotes",
     },
     {
         title: "All Courses",
         icon: "BookOpen",
-        href: "/dashboard/allCourses",
+        href: "/allCourses",
     },
 ];
 
@@ -103,12 +103,6 @@ export const adminMenuItems = [
     },
 ];
 export const bottomMenuItems = [
-    {
-        title: 'Notifications',
-        icon: "Bell",
-        href: '/notifications',
-        badge: 3
-    },
     {
         title: 'Reviews',
         icon: "MessageSquare",

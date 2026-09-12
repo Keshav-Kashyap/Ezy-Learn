@@ -51,7 +51,7 @@ const fetchAdminAnalytics = async () => {
 };
 
 const fetchPopularNotes = async () => {
-  const response = await fetch('/api/admin/popularNotes');
+  const response = await fetch('/api/material/popular');
   if (!response.ok) {
     throw new Error('Failed to fetch popular notes');
   }

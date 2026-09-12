@@ -80,7 +80,7 @@ export async function POST(request) {
         // Detect file type from URL
         const { getFileType } = await import('@/lib/utils');
         const detectedFileType = getFileType(processedUrl);
-        console.log('📄 Detected file type:', detectedFileType);
+        console.log(' Detected file type:', detectedFileType);
 
         // Prepare tags array
         const tagsArray = [courseCode, 'study-material'];

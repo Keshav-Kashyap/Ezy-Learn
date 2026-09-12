@@ -22,7 +22,7 @@ export async function POST(request) {
         const semesterNumber = parseInt(semesterName.match(/\d+/)?.[0] || "1");
         const year = Math.ceil(semesterNumber / 2);
 
-        console.log(`📖 Semester ${semesterNumber} -> Year ${year}`);
+        console.log(` Semester ${semesterNumber} -> Year ${year}`);
 
         // Fetch syllabus for this category and year
         const syllabi = await db

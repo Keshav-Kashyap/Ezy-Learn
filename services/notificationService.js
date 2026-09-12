@@ -142,13 +142,13 @@ export function generateNotificationMessage(type, data) {
 
         case NOTIFICATION_TYPES.SUBJECT_CREATED:
             return {
-                title: '📖 New Subject Added!',
+                title: ' New Subject Added!',
                 message: `${subjectName} has been added to ${semesterName} in ${courseName}.`,
             };
 
         case NOTIFICATION_TYPES.MATERIAL_UPLOADED:
             return {
-                title: '📄 New Study Material Available!',
+                title: ' New Study Material Available!',
                 message: `"${materialTitle}" has been uploaded for ${subjectName} in ${semesterName}.`,
             };
 

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import axios from "axios";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +24,8 @@ import {
     Loader2,
     CheckCircle2
 } from "lucide-react";
+import { useUserProfile, useUpdateUserProfile } from "@/hooks/useUser";
+import { useAvailableCourses, useCourseSemesters } from "@/hooks/useCourses";
 
 export default function CreateProfilePage() {
     const router = useRouter();
@@ -35,104 +36,46 @@ export default function CreateProfilePage() {
     const [name, setName] = useState("");
     const [course, setCourse] = useState("");
     const [semester, setSemester] = useState("");
-    const [coursesList, setCoursesList] = useState([]);
-    const [availableSemesters, setAvailableSemesters] = useState([]);
-    const [loadingSemesters, setLoadingSemesters] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [fetchingInitial, setFetchingInitial] = useState(true);
+
+    // Hooks & queries
+    const updateProfileMutation = useUpdateUserProfile();
+    const loading = updateProfileMutation.isPending;
+    const { data: userProfileData, isLoading: isLoadingProfile } = useUserProfile({ enabled: isLoaded });
+    const { data: coursesData, isLoading: loadingCourses } = useAvailableCourses();
+    const { data: semestersCount = 0, isLoading: loadingSemesters } = useCourseSemesters(course);
+
+    const rawCourses = coursesData?.courses || [];
+    const coursesList = rawCourses.length > 0
+        ? (rawCourses.includes("Other") ? rawCourses : [...rawCourses, "Other"])
+        : [];
 
     const isOtherCourse = course === "Other" || course === "Others";
     const totalSteps = isOtherCourse ? 2 : 3;
 
     useEffect(() => {
-        if (!isLoaded) return;
+        if (!isLoaded || isLoadingProfile) return;
 
-        const checkExistingProfile = async () => {
-            try {
-                const res = await axios.get("/api/user-profile");
-                if (res.data.success) {
-                    if (res.data.user?.name) {
-                        setName(res.data.user.name);
-                    } else if (user) {
-                        const googleName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-                        setName(googleName || user.username || "");
-                    }
-
-                    if (res.data.exists && res.data.profile) {
-                        setCourse(res.data.profile.course || "");
-                        setSemester(res.data.profile.semester || "");
-                        router.push("/dashboard");
-                        return;
-                    }
-                }
-            } catch (error) {
-                console.error("Error fetching initial user profile:", error);
-                if (user) {
-                    const googleName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-                    setName(googleName || user.username || "");
-                }
-            } finally {
-                setFetchingInitial(false);
+        if (userProfileData?.success) {
+            if (userProfileData.user?.name) {
+                setName(userProfileData.user.name);
+            } else if (user) {
+                const googleName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+                setName(googleName || user.username || "");
             }
-        };
 
-        const fetchCourses = async () => {
-            try {
-                const [res, availRes] = await Promise.all([
-                    axios.get("/api/courses?limit=100"),
-                    axios.get("/api/available-courses")
-                ]);
-
-                let dynamicCategories = [];
-                if (res.data?.success && res.data.courses?.length > 0) {
-                    dynamicCategories = res.data.courses
-                        .map(c => c.category || c.title)
-                        .filter(Boolean);
-                }
-
-                let availableCourses = [];
-                if (availRes.data?.success && availRes.data.courses?.length > 0) {
-                    availableCourses = availRes.data.courses;
-                }
-
-                const combined = Array.from(new Set([...dynamicCategories, ...availableCourses, "Other"]));
-                setCoursesList(combined);
-            } catch (err) {
-                console.error("Error fetching dynamic DB courses:", err);
+            if (userProfileData.exists && userProfileData.profile) {
+                setCourse(userProfileData.profile.course || "");
+                setSemester(userProfileData.profile.semester || "");
+                router.push("/dashboard");
+                return;
             }
-        };
-
-        checkExistingProfile();
-        fetchCourses();
-    }, [isLoaded, user]);
-
-    // Fetch semesters dynamically when a course is selected
-    useEffect(() => {
-        if (!course || course === "Other" || course === "Others") {
-            setAvailableSemesters([]);
-            setSemester("");
-            return;
+        } else if (user) {
+            const googleName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+            setName(googleName || user.username || "");
         }
-
-        const fetchSemestersForCourse = async () => {
-            setLoadingSemesters(true);
-            try {
-                const res = await axios.get(`/api/semesters?course=${encodeURIComponent(course)}`);
-                if (res.data.success && res.data.semesters?.length > 0) {
-                    setAvailableSemesters(res.data.semesters);
-                } else {
-                    setAvailableSemesters([]);
-                }
-            } catch (err) {
-                console.error("Error fetching semesters for course:", err);
-                setAvailableSemesters([]);
-            } finally {
-                setLoadingSemesters(false);
-            }
-        };
-
-        fetchSemestersForCourse();
-    }, [course]);
+        setFetchingInitial(false);
+    }, [isLoaded, isLoadingProfile, userProfileData, user, router]);
 
     // Core Submit Handler
     const submitProfileData = async (selectedCourse, selectedSemester) => {
@@ -157,28 +100,20 @@ export default function CreateProfilePage() {
             return;
         }
 
-        setLoading(true);
-
         try {
-            const res = await axios.post("/api/user-profile", {
+            await updateProfileMutation.mutateAsync({
                 name: name.trim(),
                 course: selectedCourse,
                 semester: finalSemester
             });
 
-            if (res.data.success) {
-                toast.success("Profile setup complete! Welcome to EzyStudy.");
-                setTimeout(() => {
-                    router.push("/dashboard");
-                }, 600);
-            } else {
-                toast.error(res.data.error || "Failed to save profile");
-            }
+            toast.success("Profile setup complete! Welcome to EzyStudy.");
+            setTimeout(() => {
+                router.push("/dashboard");
+            }, 600);
         } catch (error) {
             console.error("Error submitting profile:", error);
-            toast.error(error.response?.data?.error || "Failed to create profile. Please try again.");
-        } finally {
-            setLoading(false);
+            toast.error(error.message || "Failed to create profile. Please try again.");
         }
     };
 
@@ -211,7 +146,7 @@ export default function CreateProfilePage() {
         submitProfileData(course, semester);
     };
 
-    if (!isLoaded || fetchingInitial) {
+    if (!isLoaded || fetchingInitial || isLoadingProfile) {
         return (
             <div
                 className="min-h-screen w-full flex flex-col items-center justify-center text-white p-4"
@@ -238,10 +173,12 @@ export default function CreateProfilePage() {
 
                 {/* Header Title */}
                 <div className="text-center space-y-2 mb-6">
-                    <h1 className="text-2xl font-bold tracking-tight text-white">
-                        Create Profile
-                    </h1>
-
+                    <div>
+                        <h1 className="text-4xl font-bold tracking-tight">
+                           Just One More 
+                        </h1>
+                        <span className="text-yellow-500 text-small font-noramal tracking-tight">Step to Your Dashboard</span>
+                    </div>
                     <p className="text-xs text-slate-400">
                         Step {Math.min(currentStep, totalSteps)} of {totalSteps}
                     </p>
@@ -307,9 +244,15 @@ export default function CreateProfilePage() {
                                     <span>Select your Course / Degree</span>
                                 </Label>
 
-                                <Select value={course} onValueChange={(val) => setCourse(val)}>
-                                    <SelectTrigger className="h-11 bg-[rgb(32,32,30)] border-[rgb(65,65,60)] px-10 text-white rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 text-center flex justify-center items-center [&>span]:w-full [&>span]:text-center">
-                                        <SelectValue placeholder="Choose Degree " />
+                                <Select
+                                    value={course}
+                                    onValueChange={(val) => {
+                                        setCourse(val);
+                                        setSemester("");
+                                    }}
+                                >
+                                    <SelectTrigger className="h-11 bg-[rgb(32,32,30)] border-[rgb(65,65,60)] px-10 text-white rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 text-center flex justify-center items-center [&>span]:w-full [&>span]:text-center data-[placeholder]:!text-white">
+                                        <SelectValue placeholder={loadingCourses ? "Loading courses..." : "Choose Degree"} />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[rgb(38,38,36)] border-[rgb(65,65,60)] text-white rounded-xl shadow-xl">
                                         {coursesList.map((c) => (
@@ -369,11 +312,11 @@ export default function CreateProfilePage() {
                                 </Label>
 
                                 <Select value={semester} onValueChange={(val) => setSemester(val)} disabled={loadingSemesters}>
-                                    <SelectTrigger className="h-11 bg-[rgb(32,32,30)] border-[rgb(65,65,60)] text-white rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 text-center px-8 flex justify-center items-center [&>span]:w-full [&>span]:text-center">
+                                    <SelectTrigger className="h-11 bg-[rgb(32,32,30)] border-[rgb(65,65,60)] text-white rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 text-center px-8 flex justify-center items-center [&>span]:w-full [&>span]:text-center data-[placeholder]:!text-white">
                                         <SelectValue placeholder={loadingSemesters ? "Loading semesters..." : "Choose Semester"} />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[rgb(38,38,36)] border-[rgb(65,65,60)] text-white rounded-xl shadow-xl">
-                                        {availableSemesters.map((sem) => (
+                                        {Array.from({ length: semestersCount }, (_, i) => `Semester ${i + 1}`).map((sem) => (
                                             <SelectItem key={sem} value={sem} className="text-xs sm:text-sm focus:bg-blue-600 focus:text-white cursor-pointer py-2.5 text-center justify-center flex items-center">
                                                 {sem}
                                             </SelectItem>
@@ -430,11 +373,10 @@ export default function CreateProfilePage() {
                                     else if (stepNum === 2 && name.trim()) setCurrentStep(2);
                                     else if (stepNum === 3 && name.trim() && course && !isOtherCourse) setCurrentStep(3);
                                 }}
-                                className={`w-2.5 h-2.5 rounded-full transition-all ${
-                                    currentStep === stepNum
+                                className={`w-2.5 h-2.5 rounded-full transition-all ${currentStep === stepNum
                                         ? "bg-blue-500 w-6"
                                         : "bg-[rgb(65,65,60)] hover:bg-[rgb(80,80,75)]"
-                                }`}
+                                    }`}
                             />
                         );
                     })}

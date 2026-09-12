@@ -7,7 +7,7 @@ import { ArrowRight, BookOpen, Award } from 'lucide-react';
 
 export default function HeroSection({ onDashboard }) {
     return (
-        <section className="relative overflow-hidden pt-20 pb-32 bg-white dark:bg-[rgb(38,38,36)]">
+        <section className="relative overflow-hidden pt-20 pb-32 px-5 bg-white dark:bg-[rgb(38,38,36)]">
             {/* Gradient Blobs */}
             <div className="absolute inset-0 -z-10">
                 <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
@@ -22,11 +22,7 @@ export default function HeroSection({ onDashboard }) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.6 }}
                         className="flex-1 text-center lg:text-left">
-                        <div className="inline-block mb-4">
-                            <span className="px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-semibold">
-                                Study Smarter, Not Harder
-                            </span>
-                        </div>
+                     
 
                         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
                             {"Ezy Learn".split(" ").map((word, i) => (
@@ -64,7 +60,7 @@ export default function HeroSection({ onDashboard }) {
                                 Get Started Free
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </button>
-                            <Link href="/dashboard/allCourses">
+                            <Link href="/allCourses">
                                 <button className="px-8 py-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105">
                                     Browse Library
                                 </button>

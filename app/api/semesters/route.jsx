@@ -12,33 +12,24 @@ export async function GET(request) {
         const course = searchParams.get('course');
 
         if (!course || course === 'Other' || course === 'Others') {
-            return NextResponse.json({ success: true, semesters: [] });
+            return NextResponse.json({ success: true, count: 0 });
         }
 
         const trimmedCourse = course.trim();
 
-        // Query ALL semesters for this course category (active or inactive) from semestersTable
-        const semesters = await db.select().from(semestersTable)
+        // Query count of semesters for this course category from semestersTable
+        const semesters = await db.select({ id: semestersTable.id }).from(semestersTable)
             .where(sql`lower(${semestersTable.category}) = lower(${trimmedCourse})`);
 
-        // If semesters found in semestersTable, sort them numerically and return
         if (semesters.length > 0) {
-            const getNumber = (name) => {
-                const match = name?.match(/\d+/);
-                return match ? parseInt(match[0], 10) : 0;
-            };
-
-            const sortedSemesters = semesters.sort((a, b) => getNumber(a.name) - getNumber(b.name));
-            const semesterNames = sortedSemesters.map(s => s.name);
-
             return NextResponse.json({
                 success: true,
-                semesters: semesterNames
+                count: semesters.length
             });
         }
 
         // Fallback: Check course duration from coursesTable
-        const courses = await db.select().from(coursesTable)
+        const courses = await db.select({ duration: coursesTable.duration }).from(coursesTable)
             .where(sql`lower(${coursesTable.category}) = lower(${trimmedCourse})`);
 
         let semCount = 6;
@@ -50,18 +41,16 @@ export async function GET(request) {
             semCount = 8;
         }
 
-        const fallbackSemesters = Array.from({ length: semCount }, (_, i) => `Semester ${i + 1}`);
-
         return NextResponse.json({
             success: true,
-            semesters: fallbackSemesters
+            count: semCount
         });
 
     } catch (error) {
-        console.error("Error fetching semesters for course:", error);
+        console.error("Error fetching semesters count for course:", error);
         return NextResponse.json({
             success: false,
-            error: error.message || "Failed to fetch semesters"
+            error: error.message || "Failed to fetch semesters count"
         }, { status: 500 });
     }
 }

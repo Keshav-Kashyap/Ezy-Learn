@@ -73,7 +73,7 @@ const SemesterOverview = () => {
             const response = await fetch(`/api/admin/syllabus?category=${category}`);
             const data = await response.json();
 
-            console.log("📖 Syllabi response:", data);
+            console.log(" Syllabi response:", data);
 
             if (data.success) {
                 console.log(" Syllabi loaded:", data.syllabi?.length || 0);

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Filter, Grid, List, FileText, Upload } from "lucide-react";
 import CreateCourseForm from "./_components/CreateNewCourse";
 import StatsCards from "./_components/StatusCards";
-import CoursesCard from "../../(main)/dashboard/allCourses/_components/CoursesCard";
+import CoursesCard from "../../(main)/allCourses/_components/CoursesCard";
 import { useAdminCourses, useInvalidateAdminData } from '@/hooks/useAdminData';
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import FormUploadSyllabus from "./_components/FormUploadSyllabus";

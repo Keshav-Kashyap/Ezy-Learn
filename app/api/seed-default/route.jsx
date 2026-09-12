@@ -75,7 +75,7 @@ export async function POST() {
             console.log(`\n Processing ${courseCategory} subjects...`);
 
             for (const [semesterName, subjects] of Object.entries(semesters)) {
-                console.log(`  📖 Adding subjects for ${semesterName}...`);
+                console.log(`   Adding subjects for ${semesterName}...`);
 
                 for (const subjectData of subjects) {
                     // Check if subject already exists
@@ -118,7 +118,7 @@ export async function POST() {
                         totalAddedMaterials++;
                     }
 
-                    console.log(`    📄 Added ${defaultMaterials.length} study materials for ${subjectData.name}`);
+                    console.log(`     Added ${defaultMaterials.length} study materials for ${subjectData.name}`);
                 }
             }
         }

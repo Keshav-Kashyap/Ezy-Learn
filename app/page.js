@@ -12,6 +12,7 @@ import {
   siteConfig
 } from '@/lib/seo-config';
 import { usePopularNotes, usePopularCourses } from '@/hooks/useCourses';
+import { useUserProfile } from '@/hooks/useUser';
 import PopularNotesSection from '@/components/sections/PopularNotesSection';
 
 // Landing page components
@@ -31,20 +32,28 @@ export default function HomePage() {
   const { userDetail } = useContext(UserDetailContext);
   const router = useRouter();
 
+  // Fetch user profile status
+  const { data: userProfileData } = useUserProfile({ enabled: Boolean(user) });
+  const hasProfile = Boolean(userProfileData?.hasProfile || userProfileData?.exists);
+
   // Fetch popular notes and courses
-  const { data: popularNotesData, isLoading: notesLoading } = usePopularNotes();
-  const { data: popularCoursesData, isLoading: coursesLoading } = usePopularCourses();
+  const { data: popularNotesData, isLoading: notesLoading } = usePopularNotes(3);
+  const { data: popularCoursesData, isLoading: coursesLoading } = usePopularCourses(3);
 
   const popularNotes = popularNotesData?.notes?.slice(0, 3) || [];
   const courses = Array.isArray(popularCoursesData) ? popularCoursesData : [];
 
   const onDashboard = () => {
     if (user) {
-      router.push('/dashboard');
+      if (hasProfile) {
+        router.push('/dashboard');
+      } else {
+        router.push('/create-profile');
+      }
     } else {
-      router.push('/sign-in')
+      router.push('/sign-in');
     }
-  }
+  };
 
   // Structured data for SEO
   const organizationData = generateOrganizationJsonLd();
@@ -106,7 +115,7 @@ export default function HomePage() {
         <link rel="canonical" href={siteConfig.url} />
       </head>
 
-      <Navbar />
+      <Navbar onDashboard={onDashboard} />
       <HeroSection onDashboard={onDashboard} />
       <FeaturesSection />
       <PopularNotesSection notes={popularNotes} loading={notesLoading} isSignedIn={isSignedIn} />

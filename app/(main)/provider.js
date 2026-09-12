@@ -11,6 +11,7 @@ import GPTSidebar from '@/components/GPTSidebar'
 // import MobileNavigation from './dashboard/_components/MobileNavigation'
 // import BackgroundLines from '@/components/Background'
 import { menuItems, bottomMenuItems } from '../../services/constant'
+import { useUserProfile } from '@/hooks/useUser'
 
 const DashboardProvider = ({ children }) => {
     const { user, isLoaded } = useUser();
@@ -20,20 +21,16 @@ const DashboardProvider = ({ children }) => {
     const [aiMessages, setAIMessages] = useState([]);
     const [sidebarWidth, setSidebarWidth] = useState(450);
 
-    useEffect(() => {
-        if (!isLoaded || !user) return;
+    // React Query user profile hook for deduplicated register query
+    const { data: profileData } = useUserProfile({ enabled: isLoaded && !!user });
 
-        // Check if user has completed profile setup
-        axios.get('/api/user-profile')
-            .then(res => {
-                if (res.data.success && !res.data.exists) {
-                    router.push('/create-profile');
-                }
-            })
-            .catch(err => {
-                console.error("Error checking user profile status:", err);
-            });
-    }, [user, isLoaded, pathname]);
+    useEffect(() => {
+        if (!isLoaded || !user || !profileData) return;
+
+        if (profileData.success && !profileData.hasProfile && !profileData.exists) {
+            router.push('/create-profile');
+        }
+    }, [user, isLoaded, profileData, router]);
 
     React.useEffect(() => {
         const handleOpenAI = () => setAISidebarOpen(true);
