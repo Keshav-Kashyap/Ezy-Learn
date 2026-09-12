@@ -38,7 +38,7 @@ export default function AdminPopularNotesPage() {
             setLoading(true);
 
             // Fetch popular notes from API
-            const response = await fetch("/api/popularNotes");
+            const response = await fetch("/api/material/popular");
             const notesData = await response.json();
             console.log("Popular notes data:", notesData);
 
@@ -313,7 +313,7 @@ export default function AdminPopularNotesPage() {
 
                             try {
                                 // Fetch fresh data for this specific material
-                                const response = await fetch('/api/popularNotes');
+                                const response = await fetch('/api/material/popular');
                                 const result = await response.json();
 
                                 if (result.success) {

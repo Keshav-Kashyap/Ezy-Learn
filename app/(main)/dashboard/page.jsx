@@ -48,7 +48,8 @@ import axios from "axios";
 import GenericCard from "../_components/shared/GenericCard";
 import GenericCardSkeleton from "../_components/skeletons/GenericCardSkeleton";
 import { UserDetailContext } from "@/context/UserDetailContext";
-import { useDashboardData, usePopularNotes, useSemesterDetail, useUserProfile } from "@/hooks/useCourses";
+import { useDashboardData, usePopularNotes, useSemesterDetail, useAvailableCourses, useCourseSemesters } from "@/hooks/useCourses";
+import { useUserProfile, useUpdateUserProfile } from "@/hooks/useUser";
 import { consumeCreditAndDownload } from "@/lib/downloadHelper";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -65,8 +66,13 @@ export default function DashboardPage() {
         semester: null
     });
 
-    // React Query: Fetch user profile first with memory caching
+    // React Query hooks for user profile, available courses list, and semester count
     const { data: profileData, isLoading: isLoadingProfile } = useUserProfile();
+    const { data: availableCoursesData } = useAvailableCourses();
+    const { data: semestersCount = 0 } = useCourseSemesters(academicProfile.program);
+    const updateProfileMutation = useUpdateUserProfile();
+
+    const coursesList = availableCoursesData?.courses || [];
     const isProfileLoaded = !isLoadingProfile && Boolean(profileData?.success);
 
     useEffect(() => {
@@ -88,59 +94,6 @@ export default function DashboardPage() {
         }
     }, [profileData, setUserDetail]);
 
-    // Dynamic Courses and Semesters State (purely loaded from DB APIs)
-    const [coursesList, setCoursesList] = useState([]);
-    const [availableSemesters, setAvailableSemesters] = useState([]);
-
-    // Fetch dynamic course choices from DB (parallel execution via Promise.all)
-    useEffect(() => {
-        const fetchCoursesList = async () => {
-            try {
-                const [res, availRes] = await Promise.all([
-                    axios.get("/api/courses?limit=100"),
-                    axios.get("/api/available-courses")
-                ]);
-
-                let dynamicCategories = [];
-                if (res.data?.success && res.data.courses?.length > 0) {
-                    dynamicCategories = res.data.courses
-                        .map(c => c.category || c.title)
-                        .filter(Boolean);
-                }
-
-                let availableCourses = [];
-                if (availRes.data?.success && availRes.data.courses?.length > 0) {
-                    availableCourses = availRes.data.courses;
-                }
-
-                const combined = Array.from(new Set([...dynamicCategories, ...availableCourses]));
-                setCoursesList(combined);
-            } catch (err) {
-                console.error("Error fetching courses list in dashboard:", err);
-            }
-        };
-        fetchCoursesList();
-    }, []);
-
-    // Fetch dynamic semester choices whenever selected program changes (strictly from DB API)
-    useEffect(() => {
-        if (!academicProfile.program) return;
-        const fetchSemestersForCourse = async () => {
-            try {
-                const res = await axios.get(`/api/semesters?course=${encodeURIComponent(academicProfile.program)}`);
-                if (res.data.success && res.data.semesters?.length > 0) {
-                    setAvailableSemesters(res.data.semesters);
-                } else {
-                    setAvailableSemesters([]);
-                }
-            } catch (err) {
-                console.error("Error fetching semesters for course:", err);
-                setAvailableSemesters([]);
-            }
-        };
-        fetchSemestersForCourse();
-    }, [academicProfile.program]);
-
     const [selectedSubjectId, setSelectedSubjectId] = useState('all');
 
     // Subject Filter State inside Dashboard
@@ -155,12 +108,12 @@ export default function DashboardPage() {
         semesterId,
         isProfileLoaded && Boolean(academicProfile.program)
     );
-    
+
     const loadingSubjects = isLoadingProfile || !isProfileLoaded || !academicProfile.program || isLoadingSemester;
     const semesterSubjects = semesterData?.subjects || [];
 
     // Fetch ALL notes from database with React Query caching
-    const { data: popularNotesData, isLoading: loadingPopularNotes } = usePopularNotes(100, true);
+    const { data: popularNotesData, isLoading: loadingPopularNotes } = usePopularNotes(6, true);
     const popularNotes = popularNotesData?.notes || [];
 
     // Greeting according to time of day
@@ -268,7 +221,7 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-slate-50/50 dark:bg-[rgb(30,30,28)] text-slate-900 dark:text-slate-100 p-6 lg:p-10 transition-colors duration-300">
             <div className="max-w-7xl mx-auto space-y-12">
 
-                {/* 1️⃣ USER PERSONALIZED WELCOME BANNER (Clean, Subtle Header) */}
+                {/*  USER PERSONALIZED WELCOME BANNER (Clean, Subtle Header) */}
                 <div className="rounded-2xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-[rgb(38,38,36)] p-5 md:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -290,49 +243,19 @@ export default function DashboardPage() {
                             {/* Course / Program Select Badge */}
                             <Select
                                 value={academicProfile.program || ''}
-                                onValueChange={async (val) => {
+                                onValueChange={(val) => {
                                     const newProgram = val;
-                                    let newSemesters = [];
-                                    try {
-                                        const res = await axios.get(`/api/semesters?course=${encodeURIComponent(newProgram)}`);
-                                        if (res.data.success && res.data.semesters?.length > 0) {
-                                            newSemesters = res.data.semesters;
-                                        }
-                                    } catch (e) {
-                                        console.error("Error fetching semesters on program change:", e);
-                                    }
-                                    setAvailableSemesters(newSemesters);
-
-                                    const currentSemNumber = academicProfile.semester || "1";
-                                    const matchedSem = newSemesters.find(s => String(s).replace(/[^0-9]/g, "") === currentSemNumber);
-                                    const nextSemNum = matchedSem ? currentSemNumber : (newSemesters[0] ? (String(newSemesters[0]).replace(/[^0-9]/g, "") || "1") : "1");
-                                    const fullSemString = matchedSem || newSemesters[0] || `Semester ${nextSemNum}`;
+                                    const nextSemNum = academicProfile.semester || "1";
+                                    const fullSemString = `Semester ${nextSemNum}`;
 
                                     setAcademicProfile(prev => ({ ...prev, program: newProgram, semester: nextSemNum }));
                                     if (setUserDetail) setUserDetail(prev => ({ ...prev, program: newProgram, semester: nextSemNum }));
 
-                                    try {
-                                        await axios.post("/api/user-profile", {
-                                            name: userDetail?.name || "Student",
-                                            course: newProgram,
-                                            semester: fullSemString
-                                        });
-
-                                        queryClient.setQueryData(['userProfile'], (oldData) => {
-                                            if (!oldData) return oldData;
-                                            return {
-                                                ...oldData,
-                                                profile: {
-                                                    ...oldData.profile,
-                                                    course: newProgram,
-                                                    semester: fullSemString
-                                                }
-                                            };
-                                        });
-                                        queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-                                    } catch (saveErr) {
-                                        console.error("Error updating user profile:", saveErr);
-                                    }
+                                    updateProfileMutation.mutate({
+                                        name: userDetail?.name || "Student",
+                                        course: newProgram,
+                                        semester: fullSemString
+                                    });
 
                                     toast.success(`Switched course to ${newProgram}!`);
                                 }}
@@ -353,38 +276,20 @@ export default function DashboardPage() {
                             {/* Semester Select Badge */}
                             <Select
                                 value={
-                                    availableSemesters.find(s => (String(s).replace(/[^0-9]/g, "") || String(s)) === academicProfile.semester) ||
-                                    (academicProfile.semester ? (academicProfile.semester.startsWith("Semester") ? academicProfile.semester : `Semester ${academicProfile.semester}`) : '')
+                                    academicProfile.semester ? (academicProfile.semester.startsWith("Semester") ? academicProfile.semester : `Semester ${academicProfile.semester}`) : 'Semester 1'
                                 }
-                                onValueChange={async (val) => {
+                                onValueChange={(val) => {
                                     const semNum = String(val).replace(/[^0-9]/g, "") || String(val);
-                                    const fullSemString = String(val).startsWith("Semester") ? val : `Semester ${val}`;
+                                    const fullSemString = `Semester ${semNum}`;
 
                                     setAcademicProfile(prev => ({ ...prev, semester: semNum }));
                                     if (setUserDetail) setUserDetail(prev => ({ ...prev, semester: semNum }));
 
-                                    try {
-                                        await axios.post("/api/user-profile", {
-                                            name: userDetail?.name || "Student",
-                                            course: academicProfile.program,
-                                            semester: fullSemString
-                                        });
-
-                                        queryClient.setQueryData(['userProfile'], (oldData) => {
-                                            if (!oldData) return oldData;
-                                            return {
-                                                ...oldData,
-                                                profile: {
-                                                    ...oldData.profile,
-                                                    course: academicProfile.program,
-                                                    semester: fullSemString
-                                                }
-                                            };
-                                        });
-                                        queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-                                    } catch (saveErr) {
-                                        console.error("Error updating user profile:", saveErr);
-                                    }
+                                    updateProfileMutation.mutate({
+                                        name: userDetail?.name || "Student",
+                                        course: academicProfile.program,
+                                        semester: fullSemString
+                                    });
 
                                     toast.success(`Switched to ${fullSemString}!`);
                                 }}
@@ -394,10 +299,11 @@ export default function DashboardPage() {
                                     <SelectValue placeholder="Select Semester" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white dark:bg-[rgb(30,30,28)] border-gray-200 dark:border-gray-800 text-slate-900 dark:text-white rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                    {availableSemesters.map((semItem) => {
-                                        const semLabel = String(semItem).startsWith("Semester") ? semItem : `Semester ${semItem}`;
+                                    {Array.from({ length: semestersCount }, (_, i) => {
+                                        const semNum = String(i + 1);
+                                        const semLabel = `Semester ${semNum}`;
                                         return (
-                                            <SelectItem key={semItem} value={semItem} className="font-semibold text-xs py-1.5 cursor-pointer">
+                                            <SelectItem key={semNum} value={semLabel} className="font-semibold text-xs py-1.5 cursor-pointer">
                                                 {semLabel}
                                             </SelectItem>
                                         );
@@ -408,7 +314,7 @@ export default function DashboardPage() {
                     )}
                 </div>
 
-                {/* 2️⃣ YOUR SEMESTER NOTES & MATERIALS */}
+                {/* 2 YOUR SEMESTER NOTES & MATERIALS */}
                 <section className="space-y-6">
                     {/* SECTION HEADER */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
@@ -418,7 +324,7 @@ export default function DashboardPage() {
                                     <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     Subject Wise Notes & Materials
                                 </h2>
-                               
+
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                 Select a subject from the dropdown to filter handwritten notes, modules, and study guides
@@ -491,11 +397,10 @@ export default function DashboardPage() {
                                         key={tab.id}
                                         type="button"
                                         onClick={() => setMaterialTypeFilter(tab.id)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                                            materialTypeFilter === tab.id
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${materialTypeFilter === tab.id
                                                 ? 'bg-blue-600 text-white shadow-xs'
                                                 : 'bg-slate-100 dark:bg-[rgb(30,30,28)] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[rgb(45,45,42)]'
-                                        }`}
+                                            }`}
                                     >
                                         {tab.label}
                                     </button>
@@ -533,7 +438,7 @@ export default function DashboardPage() {
                                                         <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                                                             {subject.name}
                                                         </h3>
-                                                
+
                                                     </div>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
                                                         {subject.materials?.length || 0} handwritten study materials available for {academicProfile.program || ''} Sem {academicProfile.semester || ''}
@@ -541,7 +446,7 @@ export default function DashboardPage() {
                                                 </div>
                                             </div>
 
-                                        
+
                                         </div>
 
                                         {/* Notes Grid Inside This Subject */}
@@ -613,7 +518,7 @@ export default function DashboardPage() {
                     )}
                 </section>
 
-                {/* 3️⃣ TOP LIKED NOTES (Most Liked 3 Notes + View More) */}
+           
                 <section className="space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
                         <div className="space-y-1">
@@ -626,7 +531,7 @@ export default function DashboardPage() {
                             </p>
                         </div>
 
-                        <Link href="/dashboard/allNotes">
+                        <Link href="/allNotes">
                             <Button variant="outline" className="h-9 px-4 border-slate-300 dark:border-slate-700 bg-white dark:bg-[rgb(30,30,28)] hover:bg-slate-100 dark:hover:bg-[rgb(45,45,42)] text-slate-900 dark:text-white font-semibold rounded-xl text-xs flex items-center gap-2">
                                 <span>View All Notes</span>
                                 <ArrowRight className="w-3.5 h-3.5" />
@@ -686,7 +591,7 @@ export default function DashboardPage() {
 
                             {/* View More Button */}
                             <div className="flex justify-center pt-4">
-                                <Link href="/dashboard/allNotes">
+                                <Link href="/allNotes">
                                     <Button variant="outline" className="h-11 px-8 rounded-xl font-bold text-xs flex items-center gap-2 border-slate-300 dark:border-slate-700 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition-all shadow-xs group">
                                         <span>View More Notes</span>
                                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

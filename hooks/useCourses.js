@@ -69,14 +69,29 @@ const fetchDashboardStats = async () => {
 };
 
 const fetchPopularNotes = async (limit = 100, fetchAll = true) => {
-    const response = await fetch(`/api/popularNotes?limit=${limit}&all=${fetchAll}`);
+    const endpoint = '/api/material/popular?limit=' + limit;
+    const response = await fetch(endpoint);
     if (!response.ok) {
-        throw new Error('Failed to fetch popular notes');
+        throw new Error('Failed to fetch notes');
     }
     const data = await response.json();
 
     if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch popular notes');
+        throw new Error(data.error || 'Failed to fetch notes');
+    }
+
+    return data;
+};
+
+const fetchAllNotesPaginated = async (page = 1, limit = 10) => {
+    const response = await fetch(`/api/material/all?page=${page}&limit=${limit}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch notes page');
+    }
+    const data = await response.json();
+
+    if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch notes page');
     }
 
     return data;
@@ -255,6 +270,28 @@ export function usePopularNotes(limit = 100, fetchAll = true) {
 }
 
 /**
+ * Hook to fetch paginated all notes with infinite scrolling (10 notes per page)
+ */
+export function useInfiniteAllNotes(limit = 10) {
+    return useInfiniteQuery({
+        queryKey: ['allNotes', 'infinite', limit],
+        initialPageParam: 1,
+        queryFn: ({ pageParam }) => fetchAllNotesPaginated(pageParam, limit),
+        getNextPageParam: (lastPage) => {
+            if (!lastPage?.notes?.length) {
+                return undefined;
+            }
+            if (lastPage?.pagination?.hasNextPage) {
+                return lastPage.pagination.currentPage + 1;
+            }
+            return undefined;
+        },
+        staleTime: 5 * 60 * 1000,
+        gcTime: 10 * 60 * 1000,
+    });
+}
+
+/**
  * Hook to fetch popular courses with caching
  * Data cached for 5 minutes to prevent unnecessary API calls
  */
@@ -332,21 +369,7 @@ export function useSemesterDetail(code, semesterId, optionsEnabled = true) {
     });
 }
 
-/**
- * Hook to fetch user profile with React Query caching
- */
-export function useUserProfile() {
-    return useQuery({
-        queryKey: ['userProfile'],
-        queryFn: async () => {
-            const res = await fetch('/api/user-profile');
-            if (!res.ok) throw new Error('Failed to fetch user profile');
-            return res.json();
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes cache
-        gcTime: 10 * 60 * 1000,
-    });
-}
+export { useUserProfile, useUpdateUserProfile, useInvalidateUserProfile } from './useUser';
 
 /**
  * Hook to fetch available courses with React Query caching
@@ -363,6 +386,40 @@ export function useAvailableCourses() {
         gcTime: 10 * 60 * 1000,
     });
 }
+
+/**
+ * Fetch semester count for a given course (category / name / code)
+ */
+const fetchSemestersForCourse = async (course) => {
+    if (!course || course === 'Other' || course === 'Others') {
+        return 0;
+    }
+    const response = await fetch(`/api/semesters?course=${encodeURIComponent(course)}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch semesters count');
+    }
+    const data = await response.json();
+
+    if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch semesters count');
+    }
+
+    return data.count ?? 0;
+};
+
+/**
+ * Hook to fetch semesters for a specific course with React Query caching
+ */
+export function useCourseSemesters(course) {
+    return useQuery({
+        queryKey: ['courseSemesters', course],
+        queryFn: () => fetchSemestersForCourse(course),
+        enabled: !!course && course !== 'Other' && course !== 'Others',
+        staleTime: 5 * 60 * 1000, // 5 minutes cache
+        gcTime: 10 * 60 * 1000,
+    });
+}
+
 
 /**
  * Hook to get both courses and stats together

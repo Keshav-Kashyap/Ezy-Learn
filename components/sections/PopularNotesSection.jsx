@@ -139,7 +139,7 @@ const PopularNotesSection = ({ notes, loading, isSignedIn }) => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     className="text-center">
-                    <Link href="/dashboard/popular">
+                    <Link href="/popular">
                         <button className="px-8 py-4 mt-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold text-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2">
                             View All Notes
                             <ArrowRight className="w-5 h-5" />

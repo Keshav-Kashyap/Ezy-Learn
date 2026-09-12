@@ -299,7 +299,7 @@ const Navbar = ({ onOpenAI }) => {
                 </button>
 
                 {/* Bell Icon */}
-                <div className="relative notification-dropdown">
+                {/* <div className="relative notification-dropdown">
                     <button
                         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[rgb(45,45,44)] transition-colors duration-300 ease-in-out relative"
                         onClick={() => setShowNotifications(!showNotifications)}
@@ -310,7 +310,7 @@ const Navbar = ({ onOpenAI }) => {
                         </span>
                     </button>
 
-                    {/* Notifications Dropdown */}
+                
                     {showNotifications && (
                         <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-[rgb(24,24,24)] rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ease-in-out">
                             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -332,7 +332,7 @@ const Navbar = ({ onOpenAI }) => {
                             </div>
                         </div>
                     )}
-                </div>
+                </div> */}
 
                 {/* User Profile */}
                 <div className="relative profile-dropdown">
@@ -377,4 +377,4 @@ const Navbar = ({ onOpenAI }) => {
     );
 };
 
-export default Navbar;
+export default Navbar;

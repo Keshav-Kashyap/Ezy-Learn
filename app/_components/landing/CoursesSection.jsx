@@ -115,7 +115,7 @@ export default function CoursesSection({ courses, loading }) {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     className="text-center mt-12">
-                    <Link href="/dashboard/allCourses">
+                    <Link href="/allCourses">
                         <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl flex items-center justify-center gap-2 mx-auto">
                             View All Courses
                             <ArrowRight className="w-5 h-5" />

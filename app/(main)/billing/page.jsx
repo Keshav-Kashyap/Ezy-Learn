@@ -46,13 +46,13 @@ const Billing = () => {
                 {/* Minimal Credit Usage Info Badges */}
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600 dark:text-gray-300">
                     <span className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#282825] border border-gray-200 dark:border-[#383835]">
-                        📖 Online Reader: <strong className="text-emerald-500">FREE</strong>
+                         Online Reader: <strong className="text-emerald-500">FREE</strong>
                     </span>
                     <span className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#282825] border border-gray-200 dark:border-[#383835]">
-                        📄 PDF Download: <strong className="text-purple-500">1 Credit</strong>
+                         PDF Download: <strong className="text-purple-500">1 Credit</strong>
                     </span>
                     <span className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#282825] border border-gray-200 dark:border-[#383835]">
-                        📑 Syllabus: <strong className="text-emerald-500">FREE</strong>
+                         Syllabus: <strong className="text-emerald-500">FREE</strong>
                     </span>
                 </div>
             </div>

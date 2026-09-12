@@ -1,31 +1,24 @@
 "use client"
 
 import { useUser } from '@clerk/nextjs'
-import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import { UserDetailContext } from '../context/UserDetailContext'
 import { NotificationProvider } from '../context/NotificationContext'
 import BuyCreditModal from '../components/BuyCreditModal'
+import { useUserProfile } from '@/hooks/useUser'
 
 const Provider = ({ children }) => {
-
-    const { user } = useUser();
+    const { user, isLoaded } = useUser();
     const [userDetail, setUserDetail] = useState();
-    useEffect(() => {
-        user && CreateNewUser();
-    }, [user])
 
-    const CreateNewUser = async () => {
-        try {
-            const result = await axios.post('/api/users/register');
-            console.log('User Details:', result.data);
-            if (result.data.success) {
-                setUserDetail(result.data.user);
-            }
-        } catch (error) {
-            console.error('Error creating/fetching user:', error);
+    // Use React Query useUserProfile hook for deduplicated user registration & profile fetching
+    const { data: profileData } = useUserProfile({ enabled: isLoaded && !!user });
+
+    useEffect(() => {
+        if (profileData?.success && profileData.user) {
+            setUserDetail(profileData.user);
         }
-    }
+    }, [profileData]);
 
     return (
         <div>

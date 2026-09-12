@@ -9,7 +9,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '6')));
 
-        console.log("🚀 Fetching popular courses...");
+        console.log(" Fetching popular courses...");
 
         // Fetch courses with material count and student count
         const courses = await db
@@ -48,7 +48,7 @@ export async function GET(request) {
                         .from(subjectsTable)
                         .where(eq(subjectsTable.category, course.category));
 
-                    console.log(`   📖 Subjects found: ${subjects.length}`);
+                    console.log(`    Subjects found: ${subjects.length}`);
 
                     const subjectIds = subjects.map(s => s.id);
                     let totalMaterials = 0;
@@ -61,7 +61,7 @@ export async function GET(request) {
                             .where(inArray(materialSubjectMappingTable.subjectId, subjectIds));
 
                         totalMaterials = result?.count || 0;
-                        console.log(`   📄 Materials found: ${totalMaterials}`);
+                        console.log(`    Materials found: ${totalMaterials}`);
                     } else {
                         console.log(`    No subjects found for category: ${course.category}`);
                     }

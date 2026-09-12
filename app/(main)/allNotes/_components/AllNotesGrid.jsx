@@ -4,7 +4,7 @@ import React, { useEffect, useState, useContext, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import GenericCard from '@/app/(main)/_components/shared/GenericCard';
 import { toast } from 'sonner';
-import { usePopularNotes } from '@/hooks/useCourses';
+import { useInfiniteAllNotes } from '@/hooks/useCourses';
 import GenericCardSkeleton from '@/app/(main)/_components/skeletons/GenericCardSkeleton';
 import { UserDetailContext } from '@/context/UserDetailContext';
 import { consumeCreditAndDownload } from '@/lib/downloadHelper';
@@ -25,9 +25,18 @@ const AllNotesGrid = ({ showHeader = true, searchQuery = '' }) => {
     const isAdmin = userDetail?.role === 'admin';
     const isOutOfCredits = !isAdmin && (userDetail?.credits ?? 0) <= 0;
 
-    // Fetch ALL notes from database
-    const { data, isLoading } = usePopularNotes(100, true);
-    const allNotes = data?.notes || [];
+    const PAGE_LIMIT = 10;
+
+    // Fetch paginated notes (10 notes per page) with React Query infinite query
+    const {
+        data,
+        isLoading,
+        isFetchingNextPage,
+        hasNextPage,
+        fetchNextPage
+    } = useInfiniteAllNotes(PAGE_LIMIT);
+
+    const allNotes = data?.pages?.flatMap(page => page.notes) || [];
     const filteredNotes = allNotes.filter(note =>
         (note.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (note.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -36,18 +45,17 @@ const AllNotesGrid = ({ showHeader = true, searchQuery = '' }) => {
     );
     const [likedNotes, setLikedNotes] = useState(new Set());
 
-    // Lazy Loading / Infinite Scroll State
-    const [visibleCount, setVisibleCount] = useState(6);
     const observerRef = useRef(null);
 
+    // Pre-fetch next page 300px before user reaches bottom (YouTube-style seamless scroll)
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting && visibleCount < allNotes.length) {
-                    setVisibleCount((prev) => Math.min(prev + 6, allNotes.length));
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
                 }
             },
-            { threshold: 0.1 }
+            { rootMargin: '300px' }
         );
 
         if (observerRef.current) {
@@ -55,7 +63,7 @@ const AllNotesGrid = ({ showHeader = true, searchQuery = '' }) => {
         }
 
         return () => observer.disconnect();
-    }, [visibleCount, allNotes.length]);
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     // Load liked notes from localStorage
     useEffect(() => {
@@ -148,13 +156,13 @@ const AllNotesGrid = ({ showHeader = true, searchQuery = '' }) => {
             ) : (
                 <>
                     <div className="grid gap-6 grid-cols-1 mb-6 md:grid-cols-2 lg:grid-cols-3">
-                        {filteredNotes.length === 0 ? (
+                        {filteredNotes.length === 0 && !isFetchingNextPage ? (
                             <div className="col-span-full text-center py-12">
                                 <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                                 <p className="text-gray-500 dark:text-gray-400">No notes found</p>
                             </div>
                         ) : (
-                            filteredNotes.slice(0, visibleCount).map((note) => {
+                            filteredNotes.map((note) => {
                                 const formattedDate = note.createdAt
                                     ? new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                                     : 'N/A';
@@ -208,16 +216,16 @@ const AllNotesGrid = ({ showHeader = true, searchQuery = '' }) => {
                                 );
                             })
                         )}
+
+                        {/* YouTube-style Skeleton Placeholders when loading next page */}
+                        {isFetchingNextPage && Array.from({ length: PAGE_LIMIT }).map((_, i) => (
+                            <GenericCardSkeleton key={`next-skeleton-${i}`} showImageHeader={false} />
+                        ))}
                     </div>
 
-                    {/* Infinite Scroll Sentinel / Lazy Load Indicator */}
-                    {visibleCount < allNotes.length && (
-                        <div ref={observerRef} className="py-8 flex flex-col items-center justify-center space-y-2">
-                            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                Loading more notes as you scroll...
-                            </span>
-                        </div>
+                    {/* Pre-fetch sentinel container for seamless scrolling */}
+                    {hasNextPage && (
+                        <div ref={observerRef} className="h-10 w-full" />
                     )}
                 </>
             )}

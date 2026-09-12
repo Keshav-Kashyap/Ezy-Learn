@@ -254,13 +254,13 @@ const AppSidebar = ({ menuItems, bottomMenuItems, isAdmin = false }) => {
                                 const isNotifications = item.title === 'Notifications';
 
                                 // Render NotificationBell for Notifications item
-                                if (isNotifications) {
-                                    return (
-                                        <SidebarMenuItem key={index}>
-                                            <NotificationBell collapsed={!open} />
-                                        </SidebarMenuItem>
-                                    );
-                                }
+                                // if (isNotifications) {
+                                //     return (
+                                //         <SidebarMenuItem key={index}>
+                                //             <NotificationBell collapsed={!open} />
+                                //         </SidebarMenuItem>
+                                //     );
+                                // }
 
                                 return (
                                     <SidebarMenuItem key={index}>

@@ -14,8 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { consumeCreditAndDownload } from "@/lib/downloadHelper";
+import { useUserProfile } from "@/hooks/useUser";
 
-export default function Navbar() {
+export default function Navbar({ onDashboard }) {
     const { user } = useUser();
     const { theme, setTheme } = useTheme();
     const { userDetail, setUserDetail } = useContext(UserDetailContext) || {};
@@ -23,6 +24,19 @@ export default function Navbar() {
     const isOutOfCredits = user && !isAdmin && (userDetail?.credits ?? 0) <= 0;
     const router = useRouter();
     const [isVisible, setIsVisible] = useState(true);
+
+    const { data: userProfileData } = useUserProfile({ enabled: Boolean(user) });
+    const hasProfile = Boolean(userProfileData?.hasProfile || userProfileData?.exists);
+
+    const handleDashboardClick = () => {
+        if (onDashboard) {
+            onDashboard();
+        } else if (user) {
+            router.push(hasProfile ? '/dashboard' : '/create-profile');
+        } else {
+            router.push('/sign-in');
+        }
+    };
     const [lastScrollY, setLastScrollY] = useState(0);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -218,7 +232,7 @@ export default function Navbar() {
 
                                     <UserButton />
                                     <button
-                                        onClick={() => router.push('/dashboard')}
+                                        onClick={handleDashboardClick}
                                         className="px-4 md:px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-300">
                                         Dashboard
                                     </button>

@@ -59,8 +59,8 @@ const NotificationBell = ({ collapsed = false }) => {
         const icons = {
             course_created: '',
             semester_created: '📚',
-            subject_created: '📖',
-            material_uploaded: '📄',
+            subject_created: '',
+            material_uploaded: '',
             course_updated: '🔄',
             semester_updated: '🔄',
             subject_updated: '🔄',
